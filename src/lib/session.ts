@@ -1,18 +1,15 @@
-import { IronSessionData } from 'iron-session'
-
-declare module 'iron-session' {
-  interface IronSessionData {
-    user?: {
-      id: string
-      email: string
-      isLoggedIn: boolean
-    }
-  }
-}
+import { IronSessionData } from "iron-session";
 
 export type User = {
-  id: string
-  email: string
-  isLoggedIn: boolean
-}
+  id: string;
+  email: string;
+  isLoggedIn: boolean;
+};
 
+export const defaultSession: IronSessionData = {
+  user: {
+    id: "",
+    email: "",
+    isLoggedIn: false,
+  },
+};

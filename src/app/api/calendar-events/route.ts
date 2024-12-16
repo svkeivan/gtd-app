@@ -1,27 +1,27 @@
-import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-import { auth } from '@/lib/auth'
+import { NextResponse } from "next/server";
+import { PrismaClient } from "@prisma/client";
+import { auth } from "@/lib/auth";
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
 
 export async function POST(request: Request) {
-  const { user } = await auth()
-  
+  const { user } = await auth();
+
   if (!user || !user.isLoggedIn) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    const { title, start, end } = await request.json()
+    const { title, start } = await request.json();
 
     const newEvent = await prisma.item.create({
       data: {
         title,
-        status: 'SCHEDULED',
+        status: "SCHEDULED",
         dueDate: new Date(start),
         userId: user.id,
       },
-    })
+    });
 
     return NextResponse.json({
       id: newEvent.id,
@@ -29,10 +29,12 @@ export async function POST(request: Request) {
       start: newEvent.dueDate,
       end: newEvent.dueDate,
       allDay: true,
-    })
+    });
   } catch (error) {
-    console.error('Error creating calendar event:', error)
-    return NextResponse.json({ error: 'Failed to create calendar event' }, { status: 500 })
+    console.error("Error creating calendar event:", error);
+    return NextResponse.json(
+      { error: "Failed to create calendar event" },
+      { status: 500 },
+    );
   }
 }
-

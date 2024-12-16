@@ -5,4 +5,3 @@ export const ironOptions = {
     secure: process.env.NODE_ENV === "production",
   },
 };
-
