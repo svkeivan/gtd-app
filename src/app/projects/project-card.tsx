@@ -23,7 +23,7 @@ import { useState } from "react";
 import { deleteProject, updateProject } from "../../actions/projects";
 
 interface ProjectWithItems extends Project {
-  items: Item[];
+  items?: Item[];
 }
 
 export function ProjectCard({ project }: { project: ProjectWithItems }) {
@@ -79,7 +79,11 @@ export function ProjectCard({ project }: { project: ProjectWithItems }) {
             status
           )}
         </p>
-        <p>Items: {project?.items?.length || 0}</p>
+        {project?.items?.length ? (
+          <p>Items: {project?.items?.length || 0}</p>
+        ) : (
+          ""
+        )}
       </CardContent>
       <CardFooter className="justify-end space-x-2">
         {isEditing ? (
