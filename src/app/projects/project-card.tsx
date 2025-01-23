@@ -1,16 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { updateProject, deleteProject } from "../../actions/projects";
+import { Button } from "@/components/ui/button";
 import {
   Card,
-  CardHeader,
-  CardTitle,
   CardContent,
   CardFooter,
+  CardHeader,
+  CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -20,8 +17,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAppStore } from "@/lib/store";
+import { Item, Project } from "@prisma/client";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { deleteProject, updateProject } from "../../actions/projects";
 
-export function ProjectCard({ project }: { project: any }) {
+interface ProjectWithItems extends Project {
+  items: Item[];
+}
+
+export function ProjectCard({ project }: { project: ProjectWithItems }) {
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(project.title);
   const [status, setStatus] = useState(project.status);
@@ -49,7 +54,7 @@ export function ProjectCard({ project }: { project: any }) {
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className='mt-1'
+              className="mt-1"
             />
           ) : (
             project.title
@@ -60,43 +65,37 @@ export function ProjectCard({ project }: { project: any }) {
         <p>
           Status:{" "}
           {isEditing ? (
-            <Select
-              value={status}
-              onValueChange={setStatus}
-            >
-              <SelectTrigger className='w-full'>
-                <SelectValue placeholder='Select status' />
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value='ACTIVE'>Active</SelectItem>
-                <SelectItem value='COMPLETED'>Completed</SelectItem>
-                <SelectItem value='ON_HOLD'>On Hold</SelectItem>
+                <SelectItem value="ACTIVE">Active</SelectItem>
+                <SelectItem value="COMPLETED">Completed</SelectItem>
+                <SelectItem value="ON_HOLD">On Hold</SelectItem>
               </SelectContent>
             </Select>
           ) : (
             status
           )}
         </p>
-        <p>Items: {project.items.length}</p>
+        <p>Items: {project?.items?.length || 0}</p>
       </CardContent>
-      <CardFooter className='justify-end space-x-2'>
+      <CardFooter className="justify-end space-x-2">
         {isEditing ? (
           <>
             <Button onClick={handleUpdate}>Save</Button>
-            <Button
-              variant='outline'
-              onClick={() => setIsEditing(false)}
-            >
+            <Button variant="outline" onClick={() => setIsEditing(false)}>
               Cancel
             </Button>
           </>
         ) : (
           <>
+            <Button onClick={() => router.push(`/projects/${project.id}`)}>
+              Show Tasks
+            </Button>
             <Button onClick={() => setIsEditing(true)}>Edit</Button>
-            <Button
-              variant='destructive'
-              onClick={handleDelete}
-            >
+            <Button variant="destructive" onClick={handleDelete}>
               Delete
             </Button>
           </>

@@ -15,7 +15,8 @@ export default async function ProcessPage({
     redirect("/login");
   }
 
-  const itemId = await searchParams.id;
+  const Params = await searchParams;
+  const { id: itemId } = Params;
   const item = itemId
     ? await getItemToProcess(itemId)
     : await getItemToProcess(user.id);

@@ -1,5 +1,6 @@
 "use server";
 
+import { auth } from "@/lib/auth";
 import { PrismaClient } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 
@@ -8,25 +9,37 @@ const prisma = new PrismaClient();
 export async function createItem(data: {
   title: string;
   notes?: string;
-  userId: string;
+  projectId?: string;
 }) {
+  const user = await auth();
+  if (!user.user) {
+    throw new Error("User not found");
+  }
   const item = await prisma.item.create({
     data: {
       title: data.title,
       notes: data.notes,
-      status: "INBOX",
-      user: { connect: { id: data.userId } },
+      status: data.projectId ? "PROJECT" : "INBOX",
+      projectId: data.projectId ?? null,
+      userId: user.user?.id,
     },
   });
-  revalidatePath("/inbox");
+  if (data.projectId) {
+    revalidatePath(`/projects/${data.projectId}`);
+  } else {
+    revalidatePath("/inbox");
+  }
   return item;
 }
-
 export async function getInboxItems(userId: string) {
   const items = await prisma.item.findMany({
     where: {
       userId: userId,
-      status: "INBOX",
+    },
+    include: {
+      project: true,
+      contexts: true,
+      tags: true,
     },
     orderBy: {
       createdAt: "desc",
@@ -88,7 +101,6 @@ export async function getNextActionsWithDetails(userId: string) {
   const nextActions = await prisma.item.findMany({
     where: {
       userId: userId,
-      status: "NEXT_ACTION",
     },
     include: {
       project: true,
@@ -119,6 +131,15 @@ export async function getItemToProcess(idOrUserId: string) {
     },
     include: {
       contexts: true,
+    },
+  });
+  return item;
+}
+
+export async function getItemOfProjects(id: string) {
+  const item = await prisma.item.findFirst({
+    where: {
+      projectId: id,
     },
   });
   return item;

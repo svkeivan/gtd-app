@@ -1,14 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import {
-  DragDropContext,
-  Droppable,
-  Draggable,
-  DropResult,
-} from "@hello-pangea/dnd";
-import { useAppStore } from "@/lib/store";
-import { NextActionCard } from "./next-action-card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -16,8 +9,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { useAppStore } from "@/lib/store";
+import {
+  DragDropContext,
+  Draggable,
+  Droppable,
+  DropResult,
+} from "@hello-pangea/dnd";
+import { Item } from "@prisma/client";
+import { useEffect, useMemo, useState } from "react";
+import { NextActionCard } from "./next-action-card";
 
 interface Project {
   id: string;
@@ -30,7 +31,7 @@ interface Context {
 }
 
 interface NextActionListProps {
-  initialNextActions: any[];
+  initialNextActions: Item[];
   projects: Project[];
   contexts: Context[];
   userId: string;
@@ -48,7 +49,7 @@ export function NextActionsList({
   const [sortBy, setSortBy] = useState("priority");
   const [searchTerm, setSearchTerm] = useState("");
 
-  useState(() => {
+  useEffect(() => {
     setNextActions(initialNextActions);
   }, [initialNextActions, setNextActions]);
 
@@ -105,33 +106,27 @@ export function NextActionsList({
 
   return (
     <div>
-      <div className='mb-4 grid gap-4 md:grid-cols-4'>
+      <div className="mb-4 grid gap-4 md:grid-cols-4">
         <div>
-          <Label htmlFor='search'>Search</Label>
+          <Label htmlFor="search">Search</Label>
           <Input
-            id='search'
-            type='text'
-            placeholder='Search actions...'
+            id="search"
+            type="text"
+            placeholder="Search actions..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         <div>
-          <Label htmlFor='project-filter'>Filter by Project</Label>
-          <Select
-            value={filterProject}
-            onValueChange={setFilterProject}
-          >
-            <SelectTrigger id='project-filter'>
-              <SelectValue placeholder='All Projects' />
+          <Label htmlFor="project-filter">Filter by Project</Label>
+          <Select value={filterProject} onValueChange={setFilterProject}>
+            <SelectTrigger id="project-filter">
+              <SelectValue placeholder="All Projects" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value='all'>All Projects</SelectItem>
+              <SelectItem value="all">All Projects</SelectItem>
               {projects.map((project) => (
-                <SelectItem
-                  key={project.id}
-                  value={project.id}
-                >
+                <SelectItem key={project.id} value={project.id}>
                   {project.title}
                 </SelectItem>
               ))}
@@ -139,21 +134,15 @@ export function NextActionsList({
           </Select>
         </div>
         <div>
-          <Label htmlFor='context-filter'>Filter by Context</Label>
-          <Select
-            value={filterContext}
-            onValueChange={setFilterContext}
-          >
-            <SelectTrigger id='context-filter'>
-              <SelectValue placeholder='All Contexts' />
+          <Label htmlFor="context-filter">Filter by Context</Label>
+          <Select value={filterContext} onValueChange={setFilterContext}>
+            <SelectTrigger id="context-filter">
+              <SelectValue placeholder="All Contexts" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value='all'>All Contexts</SelectItem>
+              <SelectItem value="all">All Contexts</SelectItem>
               {contexts.map((context) => (
-                <SelectItem
-                  key={context.id}
-                  value={context.id}
-                >
+                <SelectItem key={context.id} value={context.id}>
                   {context.name}
                 </SelectItem>
               ))}
@@ -161,28 +150,25 @@ export function NextActionsList({
           </Select>
         </div>
         <div>
-          <Label htmlFor='sort-by'>Sort by</Label>
-          <Select
-            value={sortBy}
-            onValueChange={setSortBy}
-          >
-            <SelectTrigger id='sort-by'>
-              <SelectValue placeholder='Sort by' />
+          <Label htmlFor="sort-by">Sort by</Label>
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger id="sort-by">
+              <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value='priority'>Priority</SelectItem>
-              <SelectItem value='title'>Title</SelectItem>
+              <SelectItem value="priority">Priority</SelectItem>
+              <SelectItem value="title">Title</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
       <DragDropContext onDragEnd={onDragEnd}>
-        <Droppable droppableId='next-actions'>
+        <Droppable droppableId="next-actions">
           {(provided) => (
             <div
               {...provided.droppableProps}
               ref={provided.innerRef}
-              className='space-y-4'
+              className="space-y-4"
             >
               {filteredAndSortedActions.map((action, index) => (
                 <Draggable
@@ -207,7 +193,7 @@ export function NextActionsList({
         </Droppable>
       </DragDropContext>
       {filteredAndSortedActions.length === 0 && (
-        <p className='text-center text-gray-500 mt-4'>No next actions found.</p>
+        <p className="mt-4 text-center text-gray-500">No next actions found.</p>
       )}
     </div>
   );

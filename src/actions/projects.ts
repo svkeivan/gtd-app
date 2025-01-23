@@ -1,9 +1,9 @@
-'use server'
+"use server";
 
-import { PrismaClient } from '@prisma/client'
-import { revalidatePath } from 'next/cache'
+import { PrismaClient } from "@prisma/client";
+import { revalidatePath } from "next/cache";
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
 
 export async function getProjects(userId: string) {
   const projects = await prisma.project.findMany({
@@ -14,40 +14,52 @@ export async function getProjects(userId: string) {
       items: true,
     },
     orderBy: {
-      createdAt: 'desc',
+      createdAt: "desc",
     },
-  })
-  return projects
+  });
+  return projects;
 }
-
+export async function getProject(projectId: string) {
+  const project = await prisma.project.findUnique({
+    where: {
+      id: projectId,
+    },
+    include: {
+      items: true,
+    },
+  });
+  return project;
+}
 export async function createProject(data: { title: string; userId: string }) {
   const project = await prisma.project.create({
     data: {
       title: data.title,
-      status: 'ACTIVE',
+      status: "ACTIVE",
       user: { connect: { id: data.userId } },
     },
-  })
-  revalidatePath('/projects')
-  return project
+  });
+  revalidatePath("/projects");
+  return project;
 }
 
-export async function updateProject(projectId: string, data: { title: string; status: string }) {
+export async function updateProject(
+  projectId: string,
+  data: { title: string; status: string },
+) {
   const project = await prisma.project.update({
     where: { id: projectId },
     data: {
       title: data.title,
       status: data.status,
     },
-  })
-  revalidatePath('/projects')
-  return project
+  });
+  revalidatePath("/projects");
+  return project;
 }
 
 export async function deleteProject(projectId: string) {
   await prisma.project.delete({
     where: { id: projectId },
-  })
-  revalidatePath('/projects')
+  });
+  revalidatePath("/projects");
 }
-

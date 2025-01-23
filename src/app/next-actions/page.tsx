@@ -13,6 +13,7 @@ export default async function NextActionsPage() {
   const { nextActions, projects, contexts } = await getNextActionsWithDetails(
     user.id,
   );
+  console.log(nextActions);
 
   return (
     <div className='container mx-auto p-4'>

@@ -1,34 +1,44 @@
 "use client";
 
 import { useAppStore } from "@/lib/store";
-import { useEffect } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import Link from "next/link";
+import { Item } from "@prisma/client";
+import { useEffect, useState } from "react";
+import { ItemCard } from "./item-card";
 
-export function InboxList({ initialItems }: { initialItems: any[] }) {
+export function InboxList({ initialItems }: { initialItems: Item[] }) {
   const { items, setItems } = useAppStore();
-
+  const [status, setStatus] = useState<string>("all");
   useEffect(() => {
     setItems(initialItems);
   }, [initialItems, setItems]);
 
+  const statusValues = ["all", ...new Set(items.map((item) => item.status))];
+
+  const filteredItems = items.filter((item) => {
+    if (status === "all") return true;
+    return item.status === status;
+  });
+
   return (
-    <div className='space-y-4'>
-      {items.map((item) => (
-        <Link
-          href={`/process?id=${item.id}`}
-          key={item.id}
+    <div>
+      <div className="mb-4">
+        <select
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+          className="rounded border p-2"
         >
-          <Card className='cursor-pointer hover:bg-gray-100 transition-colors'>
-            <CardHeader>
-              <CardTitle>{item.title}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p>{item.notes}</p>
-            </CardContent>
-          </Card>
-        </Link>
-      ))}
+          {statusValues.map((statusValue) => (
+            <option key={statusValue} value={statusValue}>
+              {statusValue.charAt(0).toUpperCase() + statusValue.slice(1)}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {filteredItems.map((item) => (
+          <ItemCard key={item.id} item={item} />
+        ))}
+      </div>
     </div>
   );
 }

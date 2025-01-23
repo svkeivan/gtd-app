@@ -1,26 +1,5 @@
+import { Context, Item, Project } from "@prisma/client";
 import { create } from "zustand";
-
-interface Item {
-  id: string;
-  title: string;
-  notes?: string;
-  status: string;
-  project?: Project;
-  contexts: Context[];
-}
-
-interface Project {
-  id: string;
-  title: string;
-  status: string;
-  items: Item[];
-}
-
-interface Context {
-  id: string;
-  name: string;
-  items: Item[];
-}
 
 interface ReviewItems {
   inboxItems: Item[];
@@ -41,7 +20,7 @@ interface DashboardData {
 interface NextAction extends Item {
   priority: number;
   project?: Project;
-  contexts: Context[];
+  contexts?: Context[];
 }
 
 interface Tag {
