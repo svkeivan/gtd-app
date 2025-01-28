@@ -30,11 +30,17 @@ export async function getProject(projectId: string) {
   });
   return project;
 }
-export async function createProject(data: { title: string; userId: string }) {
+export async function createProject(data: {
+  title: string;
+  userId: string;
+  description?: string;
+  status?: string;
+}) {
   const project = await prisma.project.create({
     data: {
       title: data.title,
-      status: "ACTIVE",
+      description: data.description,
+      status: data.status || "ACTIVE",
       user: { connect: { id: data.userId } },
     },
   });
@@ -44,13 +50,14 @@ export async function createProject(data: { title: string; userId: string }) {
 
 export async function updateProject(
   projectId: string,
-  data: { title: string; status: string },
+  data: { title: string; status: string; description?: string },
 ) {
   const project = await prisma.project.update({
     where: { id: projectId },
     data: {
       title: data.title,
       status: data.status,
+      description: data.description,
     },
   });
   revalidatePath("/projects");

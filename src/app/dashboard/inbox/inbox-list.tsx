@@ -20,21 +20,35 @@ export function InboxList({ initialItems }: { initialItems: Item[] }) {
   });
 
   return (
-    <div>
-      <div className="mb-4">
-        <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-          className="rounded border p-2"
-        >
-          {statusValues.map((statusValue) => (
-            <option key={statusValue} value={statusValue}>
-              {statusValue.charAt(0).toUpperCase() + statusValue.slice(1)}
-            </option>
-          ))}
-        </select>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg font-semibold">Inbox Items</h2>
+          <div className="rounded-full bg-secondary px-2.5 py-0.5 text-sm text-secondary-foreground">
+            {items.length} items
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">
+            Filter by status:
+          </span>
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+            className="rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+          >
+            {statusValues.map((statusValue) => (
+              <option key={statusValue} value={statusValue}>
+                {statusValue === "all"
+                  ? "All Items"
+                  : statusValue.charAt(0).toUpperCase() +
+                    statusValue.slice(1).toLowerCase()}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
-      <div className="grid h-full grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {filteredItems.map((item) => (
           <ItemCard key={item.id} item={item} />
         ))}

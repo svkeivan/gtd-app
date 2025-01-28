@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { createTag } from "../../actions/tags";
+import { createTag } from "@/actions/tags";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAppStore } from "@/lib/store";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export function TagForm({ userId }: { userId: string }) {
   const [name, setName] = useState("");
@@ -27,37 +27,34 @@ export function TagForm({ userId }: { userId: string }) {
   };
 
   return (
-    <Card className='mb-4'>
+    <Card className="mb-4">
       <CardHeader>
         <CardTitle>Create New Tag</CardTitle>
       </CardHeader>
       <CardContent>
-        <form
-          onSubmit={handleSubmit}
-          className='space-y-4'
-        >
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label htmlFor='tag-name'>Tag Name</Label>
+            <Label htmlFor="tag-name">Tag Name</Label>
             <Input
-              id='tag-name'
-              type='text'
+              id="tag-name"
+              type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder='Enter a new tag name'
+              placeholder="Enter a new tag name"
               required
             />
           </div>
           <div>
-            <Label htmlFor='tag-color'>Tag Color</Label>
+            <Label htmlFor="tag-color">Tag Color</Label>
             <Input
-              id='tag-color'
-              type='color'
+              id="tag-color"
+              type="color"
               value={color}
               onChange={(e) => setColor(e.target.value)}
               required
             />
           </div>
-          <Button type='submit'>Create Tag</Button>
+          <Button type="submit">Create Tag</Button>
         </form>
       </CardContent>
     </Card>

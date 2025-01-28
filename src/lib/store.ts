@@ -17,7 +17,7 @@ interface DashboardData {
   recentItems: Item[];
 }
 
-interface NextAction extends Item {
+export interface NextAction extends Item {
   project?: Project;
   contexts?: Context[];
 }

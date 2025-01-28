@@ -46,17 +46,18 @@ model Item {
 }
 
 model Project {
-  id        String    @id @default(cuid())
-  title     String
-  status    String
-  items     Item[]
-  user      User      @relation(fields: [userId], references: [id])
-  userId    String
-  parentId  String?
-  parent    Project?  @relation("ProjectHierarchy", fields: [parentId], references: [id])
-  children  Project[] @relation("ProjectHierarchy")
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  status      String
+  items       Item[]
+  user        User      @relation(fields: [userId], references: [id])
+  userId      String
+  parentId    String?
+  parent      Project?  @relation("ProjectHierarchy", fields: [parentId], references: [id])
+  children    Project[] @relation("ProjectHierarchy")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 model Context {

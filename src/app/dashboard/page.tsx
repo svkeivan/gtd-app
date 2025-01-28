@@ -6,6 +6,7 @@ import { getDashboardData } from "../../actions/dashboard";
 import { DashboardSummary } from "./dashboard-summary";
 import { QuickAddForm } from "./quick-add-form";
 import { RecentItemsList } from "./recent-items-list";
+import { TodaysTasksList } from "./todays-tasks-list";
 
 interface DashboardData {
   inboxCount: number;
@@ -13,6 +14,19 @@ interface DashboardData {
   projectsCount: number;
   contextsCount: number;
   completedCount: number;
+  todaysTasks: Array<{
+    id: string;
+    title: string;
+    priority: number;
+    project: {
+      id: string;
+      title: string;
+    } | null;
+    contexts: Array<{
+      id: string;
+      name: string;
+    }>;
+  }>;
   recentItems: Array<{
     id: string;
     title: string;
@@ -107,6 +121,7 @@ export default async function DashboardPage() {
           </Card>
 
           <DashboardSummary data={dashboardData} />
+          <TodaysTasksList tasks={dashboardData.todaysTasks} />
         </div>
 
         <div className="md:col-span-3">

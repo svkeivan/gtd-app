@@ -60,6 +60,8 @@ interface CalendarEvent {
   isTimeEntry?: boolean;
   itemId?: string;
   estimated?: number;
+  draggedFromOutside?: boolean;
+  dataTransfer?: DataTransfer;
 }
 
 interface Task {
@@ -68,12 +70,18 @@ interface Task {
   status: string;
 }
 
-interface CalendarViewProps {
-  initialEvents: CalendarEvent[];
-  userId: string;
+interface DroppedTaskData {
+  id: string;
+  title: string;
+  estimated: number;
+  isTask: boolean;
 }
 
-export function CalendarView({ initialEvents, userId }: CalendarViewProps) {
+interface CalendarViewProps {
+  initialEvents: CalendarEvent[];
+}
+
+export function CalendarView({ initialEvents }: CalendarViewProps) {
   const [events, setEvents] = useState<CalendarEvent[]>(initialEvents);
   const [selectedSlot, setSelectedSlot] = useState<SlotInfo | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -97,31 +105,47 @@ export function CalendarView({ initialEvents, userId }: CalendarViewProps) {
     start,
     end,
   }: {
-    event: CalendarEvent;
+    event: CalendarEvent & { draggedFromOutside?: boolean };
     start: Date;
     end: Date;
   }) => {
-    if (!event.isTask) return; // Only allow dragging tasks
+    if (!event.isTask) return;
+
+    const duration = event.draggedFromOutside
+      ? event.estimated || 30 // Default to 30 minutes for new drops
+      : moment(event.end).diff(moment(event.start), "minutes"); // Keep existing duration for moves
+
+    const endTime = moment(start).add(duration, "minutes").toDate();
 
     try {
-      const response = await fetch(`/api/items/${event.itemId}`, {
+      const response = await fetch(`/api/items/${event.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           plannedDate: start,
+          estimated: duration,
         }),
       });
 
       if (!response.ok) throw new Error("Failed to update task");
 
-      const updatedEvent = {
-        ...event,
+      const newEvent: CalendarEvent = {
+        id: event.id,
+        title: event.title,
         start: new Date(start),
-        end: end ? new Date(end) : new Date(start),
+        end: endTime,
+        isTask: true,
+        itemId: event.id,
+        estimated: duration,
       };
-      setEvents(events.map((e) => (e.id === event.id ? updatedEvent : e)));
+
+      if (event.draggedFromOutside) {
+        setEvents([...events, newEvent]);
+      } else {
+        setEvents(events.map((e) => (e.id === event.id ? newEvent : e)));
+      }
     } catch (error) {
       console.error("Error updating task:", error);
     }

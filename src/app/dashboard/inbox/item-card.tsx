@@ -1,40 +1,22 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { cn, getPriorityColor } from "@/lib/utils";
+import { getPriorityColor } from "@/lib/utils";
 import { Item, Project, Tag } from "@prisma/client";
 import { differenceInDays, format } from "date-fns";
 import {
+  ArrowRight,
   CalendarDays,
   CalendarIcon,
   CircleDot,
+  Clock,
   Folder,
-  RefreshCw,
+  MoreHorizontal,
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { EditItemDialog } from "./edit-item-dialog";
 
 interface ItemWithProject extends Item {
   project?: Project;
@@ -43,13 +25,12 @@ interface ItemWithProject extends Item {
 
 export function ItemCard({ item: initialItem }: { item: ItemWithProject }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [item, setItem] = useState(initialItem);
+  const [item, setItem] = useState<ItemWithProject>(initialItem);
   const {
     id,
     title,
     notes,
     createdAt,
-    updatedAt,
     projectId,
     project,
     status,
@@ -59,200 +40,117 @@ export function ItemCard({ item: initialItem }: { item: ItemWithProject }) {
     tags,
   } = item;
 
-  const handleUpdate = async () => {
-    try {
-      const updateData = {
-        title: item.title,
-        notes: item.notes,
-        status: item.status,
-        projectId: item.projectId,
-      };
-
-      const response = await fetch(`/api/items/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(updateData),
-      });
-
-      if (!response.ok) throw new Error("Failed to update item");
-      const updatedItem = await response.json();
-      setItem(updatedItem);
-      setIsOpen(false);
-    } catch (error) {
-      console.error("Failed to update item:", error);
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "TODO":
+        return "bg-yellow-100 text-yellow-800";
+      case "IN_PROGRESS":
+        return "bg-blue-100 text-blue-800";
+      case "DONE":
+        return "bg-green-100 text-green-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   return (
-    <div className="h-full">
-      <Card
-        className="mb-4 h-full cursor-pointer transition-all duration-200 hover:bg-accent/50 hover:shadow-md"
-        onClick={() => setIsOpen(true)}
-      >
+    <div className="group relative">
+      <Card className="relative h-full overflow-hidden transition-all duration-300 hover:shadow-lg">
         <div
-          className="h-1 w-full rounded-t-xl p-1"
+          className="absolute inset-x-0 top-0 h-1"
           style={{ backgroundColor: getPriorityColor(priority) }}
         />
-        <CardContent className="p-5">
-          <h3 className="text-lg font-semibold leading-none tracking-tight">
-            {title}
-          </h3>
-          <p className="mt-3 line-clamp-2 text-sm text-muted-foreground">
-            {notes}
-          </p>
-          <div className="mt-4 flex flex-wrap gap-4 text-xs text-muted-foreground">
-            <span className="flex items-center">
-              <CalendarDays className="mr-1 h-4 w-4" />
-              Created: {format(new Date(createdAt), "PPpp")} (
-              {differenceInDays(new Date(), new Date(createdAt))} days ago)
-            </span>
-            <span className="flex items-center">
-              <RefreshCw className="mr-1 h-4 w-4" />
-              Updated: {format(new Date(updatedAt), "PP")}
-            </span>
-            {projectId && (
-              <span className="flex items-center">
-                <Folder className="mr-1 h-4 w-4" />
-                Project: {project?.title}
-              </span>
-            )}
-            <span className="flex items-center">
-              <CircleDot className="mr-1 h-4 w-4" />
-              Status: {status}
-            </span>
-            <span className="flex items-center">Priority: {priority}</span>
-            {dueDate && (
-              <span className="flex items-center">
-                Due Date: {format(new Date(dueDate), "PP")}
-              </span>
-            )}
-            {estimated && (
-              <span className="flex items-center">
-                Estimated: {estimated} hours
-              </span>
-            )}
-            {tags && tags.length > 0 && (
-              <span className="flex items-center">
-                Tags: {tags.map((tag) => tag.name).join(", ")}
-              </span>
-            )}
+        <CardContent className="p-6">
+          <div className="mb-6 flex items-start justify-between">
+            <div className="space-y-1.5">
+              <h3 className="text-xl font-semibold leading-tight tracking-tight">
+                {title}
+              </h3>
+              {notes && (
+                <p className="line-clamp-2 text-sm text-muted-foreground">
+                  {notes}
+                </p>
+              )}
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="opacity-0 transition-opacity group-hover:opacity-100"
+              onClick={() => setIsOpen(true)}
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
           </div>
-          <Link href={`/process?id=${id}`} className="mt-4 inline-block">
-            <Button>Process Item</Button>
-          </Link>
+
+          <div className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              <span
+                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusColor(
+                  status,
+                )}`}
+              >
+                <CircleDot className="h-3 w-3" />
+                {status}
+              </span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-medium text-purple-800">
+                {priority} Priority
+              </span>
+              {dueDate && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-pink-100 px-2.5 py-0.5 text-xs font-medium text-pink-800">
+                  <CalendarIcon className="h-3 w-3" />
+                  {format(new Date(dueDate), "PP")}
+                </span>
+              )}
+              {estimated && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-indigo-800">
+                  <Clock className="h-3 w-3" />
+                  {estimated}h
+                </span>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <CalendarDays className="h-3 w-3" />
+                {differenceInDays(new Date(), new Date(createdAt))} days ago
+              </span>
+              {projectId && (
+                <span className="flex items-center gap-1">
+                  <Folder className="h-3 w-3" />
+                  {project?.title}
+                </span>
+              )}
+              {tags && tags.length > 0 && (
+                <span className="flex items-center gap-1">
+                  {tags.map((tag) => tag.name).join(", ")}
+                </span>
+              )}
+            </div>
+
+            <div className="pt-2">
+              <Link
+                href={`/process?id=${id}`}
+                className="inline-flex w-full items-center justify-center"
+              >
+                <Button
+                  variant="ghost"
+                  className="w-full gap-2 opacity-0 transition-opacity group-hover:opacity-100"
+                >
+                  Process Item
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Edit Item</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid gap-4">
-              <div>
-                <label className="text-sm font-medium">Title</label>
-                <Input
-                  value={title}
-                  onChange={(e) => setItem({ ...item, title: e.target.value })}
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-medium">Notes</label>
-                <Textarea
-                  value={notes}
-                  onChange={(e) => setItem({ ...item, notes: e.target.value })}
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-medium">Status</label>
-                <Select
-                  value={status}
-                  onValueChange={(value) => setItem({ ...item, status: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="TODO">TODO</SelectItem>
-                    <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                    <SelectItem value="DONE">Done</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium">Priority</label>
-                <Select
-                  value={priority}
-                  onValueChange={(value) =>
-                    setItem({ ...item, priority: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select priority" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="LOW">Low</SelectItem>
-                    <SelectItem value="MEDIUM">Medium</SelectItem>
-                    <SelectItem value="HIGH">High</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium">Due Date</label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !dueDate && "text-muted-foreground",
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {dueDate
-                        ? format(new Date(dueDate), "PPP")
-                        : "Pick a date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={dueDate ? new Date(dueDate) : undefined}
-                      onSelect={(date) => setItem({ ...item, dueDate: date })}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium">Estimated Hours</label>
-                <Input
-                  type="number"
-                  value={estimated || ""}
-                  onChange={(e) =>
-                    setItem({ ...item, estimated: parseFloat(e.target.value) })
-                  }
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-4">
-              <Button variant="secondary" onClick={() => setIsOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleUpdate}>Save Changes</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <EditItemDialog
+        item={item}
+        open={isOpen}
+        onOpenChange={setIsOpen}
+        onUpdate={setItem}
+      />
     </div>
   );
 }

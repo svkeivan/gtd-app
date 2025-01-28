@@ -1,18 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { updateTag, deleteTag } from "../../actions/tags";
+import { deleteTag, updateTag } from "@/actions/tags";
+import { Button } from "@/components/ui/button";
 import {
   Card,
-  CardHeader,
-  CardTitle,
   CardContent,
   CardFooter,
+  CardHeader,
+  CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAppStore } from "@/lib/store";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export function TagCard({ tag }: { tag: any }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -37,9 +37,9 @@ export function TagCard({ tag }: { tag: any }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className='flex items-center space-x-2'>
+        <CardTitle className="flex items-center space-x-2">
           <div
-            className='w-6 h-6 rounded-full'
+            className="h-6 w-6 rounded-full"
             style={{ backgroundColor: tag.color }}
           ></div>
           <span>
@@ -47,7 +47,7 @@ export function TagCard({ tag }: { tag: any }) {
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className='mt-1'
+                className="mt-1"
               />
             ) : (
               tag.name
@@ -57,9 +57,9 @@ export function TagCard({ tag }: { tag: any }) {
       </CardHeader>
       <CardContent>
         {isEditing && (
-          <div className='mb-2'>
+          <div className="mb-2">
             <Input
-              type='color'
+              type="color"
               value={color}
               onChange={(e) => setColor(e.target.value)}
             />
@@ -67,24 +67,18 @@ export function TagCard({ tag }: { tag: any }) {
         )}
         <p>Items: {tag.items?.length || 0}</p>
       </CardContent>
-      <CardFooter className='justify-end space-x-2'>
+      <CardFooter className="justify-end space-x-2">
         {isEditing ? (
           <>
             <Button onClick={handleUpdate}>Save</Button>
-            <Button
-              variant='outline'
-              onClick={() => setIsEditing(false)}
-            >
+            <Button variant="outline" onClick={() => setIsEditing(false)}>
               Cancel
             </Button>
           </>
         ) : (
           <>
             <Button onClick={() => setIsEditing(true)}>Edit</Button>
-            <Button
-              variant='destructive'
-              onClick={handleDelete}
-            >
+            <Button variant="destructive" onClick={handleDelete}>
               Delete
             </Button>
           </>
