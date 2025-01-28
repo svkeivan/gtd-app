@@ -34,7 +34,7 @@ export function InboxList({ initialItems }: { initialItems: Item[] }) {
           ))}
         </select>
       </div>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid h-full grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {filteredItems.map((item) => (
           <ItemCard key={item.id} item={item} />
         ))}

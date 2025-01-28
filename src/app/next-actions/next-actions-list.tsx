@@ -17,23 +17,15 @@ import {
   DropResult,
 } from "@hello-pangea/dnd";
 import { Item } from "@prisma/client";
+
+import { ContextSummary, ProjectSummary } from "@/types/project-types";
 import { useEffect, useMemo, useState } from "react";
 import { NextActionCard } from "./next-action-card";
 
-interface Project {
-  id: string;
-  title: string;
-}
-
-interface Context {
-  id: string;
-  name: string;
-}
-
 interface NextActionListProps {
   initialNextActions: Item[];
-  projects: Project[];
-  contexts: Context[];
+  projects: ProjectSummary[];
+  contexts: ContextSummary[];
   userId: string;
 }
 
@@ -59,7 +51,7 @@ export function NextActionsList({
         (action) =>
           (filterProject === "all" || action.project?.id === filterProject) &&
           (filterContext === "all" ||
-            action.contexts.some((c) => c.id === filterContext)) &&
+            action?.contexts?.some((c) => c.id === filterContext)) &&
           (searchTerm
             ? action.title.toLowerCase().includes(searchTerm.toLowerCase())
             : true),

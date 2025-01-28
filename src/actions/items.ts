@@ -101,6 +101,7 @@ export async function getNextActionsWithDetails(userId: string) {
   const nextActions = await prisma.item.findMany({
     where: {
       userId: userId,
+      status: { not: "COMPLETED" },
     },
     include: {
       project: true,
@@ -140,6 +141,36 @@ export async function getItemOfProjects(id: string) {
   const item = await prisma.item.findFirst({
     where: {
       projectId: id,
+    },
+  });
+  return item;
+}
+
+export async function updateItem(
+  id: string,
+  data: {
+    title?: string;
+    notes?: string;
+    status?: string;
+    projectId?: string | null;
+    contextIds?: string[];
+  },
+) {
+  const item = await prisma.item.update({
+    where: { id },
+    data: {
+      ...(data.title && { title: data.title }),
+      ...(data.notes && { notes: data.notes }),
+      ...(data.status && { status: data.status }),
+      ...(data.projectId !== undefined && { projectId: data.projectId }),
+      ...(data.contextIds && {
+        contexts: {
+          set: data.contextIds.map((id) => ({ id })),
+        },
+      }),
+    },
+    include: {
+      contexts: true,
     },
   });
   return item;

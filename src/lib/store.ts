@@ -18,7 +18,6 @@ interface DashboardData {
 }
 
 interface NextAction extends Item {
-  priority: number;
   project?: Project;
   contexts?: Context[];
 }

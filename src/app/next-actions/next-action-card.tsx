@@ -1,38 +1,26 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { updateItemStatus } from "@/actions/items";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
-  CardHeader,
-  CardTitle,
   CardContent,
   CardFooter,
+  CardHeader,
+  CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAppStore } from "@/lib/store";
-import { updateItemStatus } from "@/actions/items";
+import { Context, Item, Project } from "@prisma/client";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
-interface Context {
-  id: string;
-  name: string;
-}
-
-interface Project {
-  title: string;
-}
-
-interface Action {
-  id: string;
-  title: string;
-  notes?: string;
+interface nextActionProps extends Item {
   project?: Project;
-  contexts: Context[];
+  contexts?: Context[];
 }
-
-export function NextActionCard({ action }: { action: Action }) {
+export function NextActionCard({ action }: { action: nextActionProps }) {
   const [isCompleting, setIsCompleting] = useState(false);
   const router = useRouter();
   const { removeNextAction } = useAppStore();
@@ -52,7 +40,7 @@ export function NextActionCard({ action }: { action: Action }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className='flex items-center space-x-2'>
+        <CardTitle className="flex items-center space-x-2">
           <Checkbox
             checked={isCompleting}
             onCheckedChange={handleComplete}
@@ -63,25 +51,22 @@ export function NextActionCard({ action }: { action: Action }) {
       </CardHeader>
       <CardContent>
         {action.notes && (
-          <p className='text-sm text-gray-600 mb-2'>{action.notes}</p>
+          <p className="mb-2 text-sm text-gray-600">{action.notes}</p>
         )}
-        <div className='flex flex-wrap gap-2'>
+        <div className="flex flex-wrap gap-2">
           {action.project && (
-            <Badge variant='secondary'>Project: {action.project.title}</Badge>
+            <Badge variant="secondary">Project: {action.project.title}</Badge>
           )}
-          {action.contexts.map((context: Context) => (
-            <Badge
-              key={context.id}
-              variant='outline'
-            >
+          {action?.contexts?.map((context: Context) => (
+            <Badge key={context.id} variant="outline">
               {context.name}
             </Badge>
           ))}
         </div>
       </CardContent>
-      <CardFooter className='justify-end'>
+      <CardFooter className="justify-end">
         <Button
-          variant='ghost'
+          variant="ghost"
           onClick={() => router.push(`/process?id=${action.id}`)}
         >
           Edit
