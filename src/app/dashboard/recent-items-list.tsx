@@ -1,17 +1,31 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import Link from 'next/link'
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Link from "next/link";
 
 interface RecentItem {
-  id: string
-  title: string
-  status: string
-  project?: { title: string }
-  contexts: { name: string }[]
+  id: string;
+  title: string;
+  status: string;
+  project: {
+    id: string;
+    title: string;
+    status: string;
+    userId: string;
+    createdAt: Date;
+    updatedAt: Date;
+    parentId: string | null;
+  } | null;
+  contexts: Array<{
+    id: string;
+    name: string;
+    userId: string;
+    createdAt: Date;
+    updatedAt: Date;
+  }>;
 }
 
 interface RecentItemsListProps {
-  items: RecentItem[]
+  items: RecentItem[];
 }
 
 export function RecentItemsList({ items }: RecentItemsListProps) {
@@ -25,7 +39,10 @@ export function RecentItemsList({ items }: RecentItemsListProps) {
           {items.map((item) => (
             <li key={item.id} className="flex items-center justify-between">
               <div>
-                <Link href={`/process?id=${item.id}`} className="font-medium hover:underline">
+                <Link
+                  href={`/process?id=${item.id}`}
+                  className="font-medium hover:underline"
+                >
                   {item.title}
                 </Link>
                 <div className="text-sm text-muted-foreground">
@@ -35,7 +52,9 @@ export function RecentItemsList({ items }: RecentItemsListProps) {
               <div className="flex items-center space-x-2">
                 <Badge>{item.status}</Badge>
                 {item.contexts.map((context) => (
-                  <Badge key={context.name} variant="outline">{context.name}</Badge>
+                  <Badge key={context.name} variant="outline">
+                    {context.name}
+                  </Badge>
                 ))}
               </div>
             </li>
@@ -43,6 +62,5 @@ export function RecentItemsList({ items }: RecentItemsListProps) {
         </ul>
       </CardContent>
     </Card>
-  )
+  );
 }
-

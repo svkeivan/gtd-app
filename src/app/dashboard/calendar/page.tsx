@@ -1,7 +1,7 @@
-import { getCalendarEvents } from "../../actions/calendar";
-import { CalendarView } from "./calendar-view";
+import { getCalendarEvents } from "@/actions/calendar";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { CalendarView } from "./calendar-view";
 
 export default async function CalendarPage() {
   const { user } = await auth();
@@ -13,12 +13,9 @@ export default async function CalendarPage() {
   const events = await getCalendarEvents(user.id);
 
   return (
-    <div className='container mx-auto p-4'>
-      <h1 className='text-2xl font-bold mb-4'>Calendar</h1>
-      <CalendarView
-        initialEvents={events}
-        userId={user.id}
-      />
+    <div className="container mx-auto p-4">
+      <h1 className="mb-4 text-2xl font-bold">Calendar</h1>
+      <CalendarView initialEvents={events} userId={user.id} />
     </div>
   );
 }

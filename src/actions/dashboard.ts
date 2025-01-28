@@ -1,8 +1,8 @@
-'use server'
+"use server";
 
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from "@prisma/client";
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
 
 export async function getDashboardData(userId: string) {
   const [
@@ -10,20 +10,28 @@ export async function getDashboardData(userId: string) {
     nextActionsCount,
     projectsCount,
     contextsCount,
-    recentItems
+    completedCount,
+    recentItems,
   ] = await Promise.all([
-    prisma.item.count({ where: { userId, status: 'INBOX' } }),
-    prisma.item.count({ where: { userId, status: 'NEXT_ACTION' } }),
+    prisma.item.count({ where: { userId, status: "INBOX" } }),
+    prisma.item.count({ where: { userId, status: "NEXT_ACTION" } }),
     prisma.project.count({ where: { userId } }),
     prisma.context.count({ where: { userId } }),
+    prisma.item.count({ where: { userId, status: "COMPLETED" } }),
     prisma.item.findMany({
       where: { userId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       take: 5,
-      include: { project: true, contexts: true }
-    })
-  ])
+      include: { project: true, contexts: true },
+    }),
+  ]);
 
-  return { inboxCount, nextActionsCount, projectsCount, contextsCount, recentItems }
+  return {
+    inboxCount,
+    nextActionsCount,
+    projectsCount,
+    contextsCount,
+    completedCount,
+    recentItems,
+  };
 }
-

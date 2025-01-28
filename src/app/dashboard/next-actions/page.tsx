@@ -1,6 +1,6 @@
+import { getNextActionsWithDetails } from "@/actions/items";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { getNextActionsWithDetails } from "../../actions/items";
 import { NextActionsList } from "./next-actions-list";
 
 export default async function NextActionsPage() {

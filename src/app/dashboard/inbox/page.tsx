@@ -1,5 +1,5 @@
+import { getInboxItems } from "@/actions/items";
 import { auth } from "@/lib/auth";
-import { getInboxItems } from "../../actions/items";
 import { InboxForm } from "./inbox-form";
 import { InboxList } from "./inbox-list";
 
