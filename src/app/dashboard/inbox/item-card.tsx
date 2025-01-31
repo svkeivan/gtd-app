@@ -129,7 +129,7 @@ export function ItemCard({ item: initialItem }: { item: ItemWithProject }) {
 
             <div className="pt-2">
               <Link
-                href={`/process?id=${id}`}
+                href={`/dashboard/process?id=${id}`}
                 className="inline-flex w-full items-center justify-center"
               >
                 <Button

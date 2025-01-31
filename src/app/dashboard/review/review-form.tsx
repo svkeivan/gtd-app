@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { completeWeeklyReview } from "../../actions/reviews";
+import { completeWeeklyReview } from "@/actions/reviews";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAppStore } from "@/lib/store";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 const reviewSteps = [
   { id: "collect", label: "Collect Loose Papers and Materials" },
@@ -45,11 +45,11 @@ export function ReviewForm({
   };
 
   return (
-    <div className='space-y-4'>
+    <div className="space-y-4">
       {reviewSteps.map((step) => (
         <Card key={step.id}>
           <CardHeader>
-            <CardTitle className='flex items-center space-x-2'>
+            <CardTitle className="flex items-center space-x-2">
               <Checkbox
                 id={step.id}
                 checked={completedSteps.includes(step.id)}
@@ -57,7 +57,7 @@ export function ReviewForm({
               />
               <label
                 htmlFor={step.id}
-                className='text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70'
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
               >
                 {step.label}
               </label>

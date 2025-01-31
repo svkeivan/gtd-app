@@ -3,6 +3,7 @@
 import { auth } from "@/lib/auth";
 import { PrismaClient } from "@prisma/client";
 import { revalidatePath } from "next/cache";
+import { cache } from "react";
 
 const prisma = new PrismaClient();
 
@@ -124,6 +125,16 @@ export async function getNextActionsWithDetails(userId: string) {
 
   return { nextActions, projects, contexts };
 }
+
+export const getInboxCount = cache(async (userId: string) => {
+  const count = await prisma.item.count({
+    where: {
+      userId,
+      status: "INBOX",
+    },
+  });
+  return count;
+});
 
 export async function getItemToProcess(idOrUserId: string) {
   const item = await prisma.item.findFirst({
