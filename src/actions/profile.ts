@@ -1,25 +1,15 @@
 "use server";
 
-import { z } from 'zod';
-import prisma from '@/lib/prisma';
-import { auth } from '@/lib/auth';
-import { revalidatePath } from 'next/cache';
-
-export const profileSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  language: z.enum(['en', 'es', 'fr', 'de']),
-  theme: z.enum(['light', 'dark', 'system']),
-  timezone: z.string(),
-  avatar: z.string().optional(),
-});
-
-export type ProfileFormData = z.infer<typeof profileSchema>;
+import { auth } from "@/lib/auth";
+import prisma from "@/lib/prisma";
+import { ProfileFormData, profileSchema } from "@/types/profile-types";
+import { revalidatePath } from "next/cache";
 
 export async function getProfile() {
   const { user: authUser } = await auth();
-  
+
   if (!authUser?.id) {
-    throw new Error('Unauthorized');
+    throw new Error("Unauthorized");
   }
 
   const userProfile = await prisma.user.findUnique({
@@ -37,7 +27,7 @@ export async function getProfile() {
   });
 
   if (!userProfile) {
-    throw new Error('User not found');
+    throw new Error("User not found");
   }
 
   return userProfile;
@@ -45,9 +35,9 @@ export async function getProfile() {
 
 export async function updateProfile(data: ProfileFormData) {
   const { user: authUser } = await auth();
-  
+
   if (!authUser?.id) {
-    throw new Error('Unauthorized');
+    throw new Error("Unauthorized");
   }
 
   // Validate data
@@ -80,7 +70,7 @@ export async function updateProfile(data: ProfileFormData) {
     await tx.auditLog.create({
       data: {
         userId: authUser.id,
-        action: 'PROFILE_UPDATE',
+        action: "PROFILE_UPDATE",
         details: JSON.stringify({
           previous: previousData,
           new: validatedData,
@@ -91,7 +81,7 @@ export async function updateProfile(data: ProfileFormData) {
     return user;
   });
 
-  revalidatePath('/dashboard/profile');
+  revalidatePath("/dashboard/profile");
 
   return {
     id: updatedUser.id,
