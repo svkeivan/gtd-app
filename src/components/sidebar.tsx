@@ -1,5 +1,6 @@
 "use client";
 
+import { ThemeSwitcher } from "@/components/theme-switcher";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -72,21 +73,24 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 bg-gray-800 p-4 text-white shadow-lg transition-all duration-300 ease-in-out">
+    <aside className="fixed left-0 top-0 h-screen w-64 border-r bg-background p-4 text-foreground shadow-lg transition-all duration-300 ease-in-out">
       <div className="flex h-full flex-col">
-        <Link
-          href="/"
-          className="group mb-8 flex items-center gap-2 text-xl font-bold transition-transform duration-200 hover:scale-105"
-        >
-          <span className="bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
-            GTD App
-          </span>
-        </Link>
+        <div className="mb-8 flex w-full items-center justify-between">
+          <Link
+            href="/"
+            className="group flex items-center gap-2 text-xl font-bold transition-transform duration-200 hover:scale-105"
+          >
+            <span className="bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
+              GTD App
+            </span>
+          </Link>
+          <ThemeSwitcher />
+        </div>
 
         <nav className="flex-1 space-y-4">
           {Object.entries(categories).map(([category, title]) => (
             <div key={category} className="space-y-1.5">
-              <div className="px-2 text-sm font-semibold text-gray-400">
+              <div className="px-2 text-sm font-semibold text-muted-foreground">
                 {title}
               </div>
               {navItems
@@ -97,8 +101,8 @@ export function Sidebar() {
                       variant={pathname === item.href ? "secondary" : "ghost"}
                       className={`w-full justify-start text-left transition-all duration-200 hover:translate-x-1 ${
                         pathname === item.href
-                          ? "bg-gradient-to-r from-blue-600 to-blue-700 font-medium shadow-md"
-                          : "hover:bg-gray-700/50"
+                          ? "bg-gradient-to-r from-blue-600 to-blue-700 font-medium text-primary-foreground shadow-md"
+                          : "hover:bg-accent"
                       }`}
                     >
                       <span className="mr-3 transform transition-transform duration-200 group-hover:scale-110">
@@ -112,11 +116,11 @@ export function Sidebar() {
           ))}
         </nav>
 
-        <div className="border-t border-gray-700 pt-4">
+        <div className="space-y-2 border-t border-border pt-4">
           <Link href="/api/auth/logout">
             <Button
               variant="ghost"
-              className="w-full justify-start transition-colors duration-200 hover:bg-red-500/20 hover:text-red-400"
+              className="w-full justify-start transition-colors duration-200 hover:bg-destructive/20 hover:text-destructive"
             >
               <span className="mr-3">🚪</span>
               Logout
