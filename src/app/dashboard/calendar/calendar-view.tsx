@@ -70,12 +70,7 @@ interface Task {
   status: string;
 }
 
-interface DroppedTaskData {
-  id: string;
-  title: string;
-  estimated: number;
-  isTask: boolean;
-}
+
 
 interface CalendarViewProps {
   initialEvents: CalendarEvent[];
@@ -103,7 +98,6 @@ export function CalendarView({ initialEvents }: CalendarViewProps) {
   const onEventDrop = async ({
     event,
     start,
-    end,
   }: {
     event: CalendarEvent & { draggedFromOutside?: boolean };
     start: Date;

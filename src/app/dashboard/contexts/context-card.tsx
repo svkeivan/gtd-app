@@ -13,8 +13,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAppStore } from "@/lib/store";
 import { deleteContext, updateContext } from "@/actions/contexts";
+import { Item } from "@prisma/client";
 
-export function ContextCard({ context }: { context: any }) {
+interface Context {
+  id: string;
+  name: string;
+  items?: Item[]; // Replace 'any' with the specific type if known
+}
+
+export function ContextCard({ context }: { context: Context }) {
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(context.name);
   const router = useRouter();
@@ -49,7 +56,7 @@ export function ContextCard({ context }: { context: any }) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <p>Items: {context.items.length}</p>
+        <p>Items: {context.items?.length || 0}</p>
       </CardContent>
       <CardFooter className='justify-end space-x-2'>
         {isEditing ? (

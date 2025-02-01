@@ -11,7 +11,7 @@ import { ProcessForm } from "./process-form";
 export default async function ProcessPage({
   searchParams,
 }: {
-  searchParams: { id?: string };
+  searchParams: Promise<{ id?: string }>;
 }) {
   const { user } = await auth();
   if (!user || !user.isLoggedIn) {

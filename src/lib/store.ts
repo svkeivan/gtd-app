@@ -1,3 +1,4 @@
+import { ContextListWithItem } from "@/types/project-types";
 import { Context, Item, Project } from "@prisma/client";
 import { create } from "zustand";
 
@@ -32,7 +33,7 @@ interface Tag {
 interface AppState {
   items: Item[];
   projects: Project[];
-  contexts: Context[];
+  contexts: ContextListWithItem[];
   nextActions: NextAction[];
   setItems: (items: Item[]) => void;
   addItem: (item: Item) => void;
@@ -41,7 +42,7 @@ interface AppState {
   addProject: (project: Project) => void;
   updateProject: (project: Project) => void;
   removeProject: (id: string) => void;
-  setContexts: (contexts: Context[]) => void;
+  setContexts: (contexts: ContextListWithItem[]) => void;
   addContext: (context: Context) => void;
   updateContext: (context: Context) => void;
   removeContext: (id: string) => void;

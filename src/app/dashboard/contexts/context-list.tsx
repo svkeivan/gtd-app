@@ -1,10 +1,15 @@
 "use client";
 
 import { useAppStore } from "@/lib/store";
+import { ContextListWithItem } from "@/types/project-types";
 import { useEffect } from "react";
 import { ContextCard } from "./context-card";
 
-export function ContextList({ initialContexts }: { initialContexts: any[] }) {
+export function ContextList({
+  initialContexts,
+}: {
+  initialContexts: ContextListWithItem[];
+}) {
   const { contexts, setContexts } = useAppStore();
 
   useEffect(() => {

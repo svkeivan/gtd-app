@@ -51,6 +51,7 @@ export async function POST(request: Request) {
       email: user.email,
     });
   } catch (error) {
+    console.error(error);
     return NextResponse.json({ error: "Registration failed" }, { status: 500 });
   }
 }

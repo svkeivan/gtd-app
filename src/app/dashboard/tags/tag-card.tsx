@@ -11,10 +11,11 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useAppStore } from "@/lib/store";
+import { Tag } from "@prisma/client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export function TagCard({ tag }: { tag: any }) {
+export function TagCard({ tag }: { tag: Tag }) {
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(tag.name);
   const [color, setColor] = useState(tag.color);

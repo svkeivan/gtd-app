@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAppStore } from "@/lib/store";
+import { ItemStatus } from "@prisma/client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -24,7 +25,13 @@ export function ReviewForm({
   initialReviewItems,
 }: {
   userId: string;
-  initialReviewItems: any;
+  initialReviewItems: {
+    inboxItems: { userId: string; id: string; title: string; notes: string | null; status: ItemStatus; priority: number; dueDate: Date | null; plannedDate: Date | null; estimated: number | null; projectId: string | null; createdAt: Date; updatedAt: Date; }[];
+    nextActions: { userId: string; id: string; title: string; notes: string | null; status: ItemStatus; priority: number; dueDate: Date | null; plannedDate: Date | null; estimated: number | null; projectId: string | null; createdAt: Date; updatedAt: Date; }[];
+    projects: { userId: string; id: string; title: string; status: string; createdAt: Date; updatedAt: Date; description: string | null; parentId: string | null; }[];
+    waitingFor: { userId: string; id: string; title: string; notes: string | null; status: ItemStatus; priority: number; dueDate: Date | null; plannedDate: Date | null; estimated: number | null; projectId: string | null; createdAt: Date; updatedAt: Date; }[];
+    somedayMaybe: { userId: string; id: string; title: string; notes: string | null; status: ItemStatus; priority: number; dueDate: Date | null; plannedDate: Date | null; estimated: number | null; projectId: string | null; createdAt: Date; updatedAt: Date; }[];
+  };
 }) {
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
   const router = useRouter();

@@ -7,3 +7,7 @@ export interface NextActionItem extends Item {
   project?: ProjectSummary | null;
   contexts?: ContextSummary[];
 }
+
+export interface ContextListWithItem extends Context {
+  items?: Item[];
+}
