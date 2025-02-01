@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { ThemeSwitcher } from "@/components/theme-switcher";
 
 export function Navbar() {
   const pathname = usePathname();
@@ -21,15 +22,15 @@ export function Navbar() {
   ];
 
   return (
-    <nav className='bg-gray-800 text-white p-4'>
-      <div className='container mx-auto flex justify-between items-center'>
+    <nav className="border-b bg-background">
+      <div className="container mx-auto flex h-16 items-center px-4">
         <Link
-          href='/'
-          className='text-xl font-bold'
+          href="/"
+          className="text-xl font-bold"
         >
           GTD App
         </Link>
-        <div className='space-x-4'>
+        <div className="ml-auto flex items-center space-x-4">
           {navItems.map((item) => (
             <Link
               key={item.href}
@@ -38,12 +39,13 @@ export function Navbar() {
             >
               <Button
                 variant={pathname === item.href ? "secondary" : "ghost"}
-                className={pathname === item.href ? "bg-gray-700" : ""}
+                className={pathname === item.href ? "bg-muted" : ""}
               >
                 {item.label}
               </Button>
             </Link>
           ))}
+          <ThemeSwitcher />
         </div>
       </div>
     </nav>
