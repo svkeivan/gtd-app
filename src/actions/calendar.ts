@@ -37,25 +37,18 @@ export async function getCalendarEvents(userId: string) {
   });
 
   // Convert tasks to calendar events (only include tasks with due dates)
-  const taskEvents = tasks
-    .filter((task: { dueDate: Date | null }) => task.dueDate !== null)
-    .map((task: { id: string; title: string; dueDate: Date | null }) => ({
-      id: task.id,
-      title: task.title,
-      start: task.dueDate as Date,
-      end: task.dueDate as Date,
-      allDay: true,
-      isTask: true,
-      itemId: task.id,
-    }));
+  const taskEvents = tasks.map((task) => ({
+    id: task.id,
+    title: task.title,
+    start: task.dueDate,
+    end: task.dueDate,
+    allDay: true,
+    isTask: true,
+    itemId: task.id,
+  }));
+
   // Convert time entries to calendar events
-  const timeEvents = timeEntries.map((entry: { 
-    id: string; 
-    item: { title: string }; 
-    duration: number; 
-    startTime: Date; 
-    endTime: Date | null;
-  }) => ({
+  const timeEvents = timeEntries.map((entry) => ({
     id: entry.id,
     title: `${entry.item.title} (${entry.duration}min)`,
     start: entry.startTime,

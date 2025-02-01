@@ -15,7 +15,7 @@ export default async function Home() {
         </p>
       </div>
 
-      {user ? (
+      {user?.isLoggedIn ? (
         <Link href="/dashboard">
           <Button size="lg">Go to Dashboard</Button>
         </Link>
