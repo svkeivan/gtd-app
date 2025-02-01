@@ -7,7 +7,10 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
+import { CommentList } from "@/components/comments/comment-list";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import {
   Popover,
@@ -77,11 +80,15 @@ export function EditItemDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-h-[90vh] max-w-2xl">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">Edit Item</DialogTitle>
+          <DialogDescription>
+            Edit item details and view activity history
+          </DialogDescription>
         </DialogHeader>
-        <div className="mt-6">
+        <ScrollArea className="max-h-[70vh]">
+          <div className="mt-6">
           <div className="grid gap-6">
             <div className="space-y-2">
               <label className="text-sm font-medium">Title</label>
@@ -200,6 +207,11 @@ export function EditItemDialog({
             </div>
           </div>
 
+          <div className="mt-8 border-t pt-6">
+            <h3 className="mb-4 text-lg font-semibold">Comments & Activity Log</h3>
+            <CommentList itemId={item.id as string} />
+          </div>
+
           <div className="mt-8 flex justify-end gap-4">
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
@@ -207,6 +219,7 @@ export function EditItemDialog({
             <Button onClick={handleUpdate}>Save Changes</Button>
           </div>
         </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );

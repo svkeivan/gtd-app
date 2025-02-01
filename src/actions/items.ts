@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@/lib/auth";
-import { ItemStatus, PrismaClient } from "@prisma/client";
+import { CommentType, ItemStatus, PrismaClient } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { cache } from "react";
 
@@ -49,6 +49,65 @@ export async function getInboxItems(userId: string) {
   return items;
 }
 
+export async function addComment(
+  itemId: string,
+  content: string,
+  type: CommentType = CommentType.COMMENT
+) {
+  const { user } = await auth();
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  const comment = await prisma.taskComment.create({
+    data: {
+      content,
+      type,
+      taskId: itemId,
+      userId: user.id,
+    },
+    include: {
+      user: {
+        select: {
+          name: true,
+          email: true,
+        },
+      },
+    },
+  });
+
+  // Create notifications for all users except the comment author
+  await prisma.commentNotification.createMany({
+    data: {
+      commentId: comment.id,
+      userId: user.id,
+    },
+  });
+
+  revalidatePath(`/items/${itemId}`);
+  return comment;
+}
+
+export async function getItemComments(itemId: string) {
+  const comments = await prisma.taskComment.findMany({
+    where: {
+      taskId: itemId,
+    },
+    include: {
+      user: {
+        select: {
+          name: true,
+          email: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+  return comments;
+}
+
 export async function processItem(
   itemId: string,
   data: {
@@ -57,6 +116,22 @@ export async function processItem(
     contextIds?: string[];
   },
 ) {
+  const { user } = await auth();
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  const currentItem = await prisma.item.findUnique({
+    where: { id: itemId },
+    include: {
+      project: true,
+    },
+  });
+
+  if (!currentItem) {
+    throw new Error("Item not found");
+  }
+
   const item = await prisma.item.update({
     where: { id: itemId },
     data: {
@@ -67,6 +142,29 @@ export async function processItem(
       },
     },
   });
+
+  // Add system comment for status change
+  if (currentItem.status !== data.status) {
+    await addComment(
+      itemId,
+      `Status changed from ${currentItem.status} to ${data.status}`,
+      CommentType.STATUS_CHANGE
+    );
+  }
+
+  // Add system comment for project change
+  if (currentItem.projectId !== data.projectId) {
+    const newProject = data.projectId 
+      ? await prisma.project.findUnique({ where: { id: data.projectId } })
+      : null;
+    
+    await addComment(
+      itemId,
+      `Project ${currentItem.projectId ? 'changed from ' + currentItem.project?.title : 'set to'} ${newProject?.title || 'none'}`,
+      CommentType.STATUS_CHANGE
+    );
+  }
+
   revalidatePath("/inbox");
   revalidatePath("/process");
   return item;
@@ -165,8 +263,21 @@ export async function updateItem(
     status?: ItemStatus;
     projectId?: string | null;
     contextIds?: string[];
+    priority?: number;
+    estimated?: number;
   },
 ) {
+  const currentItem = await prisma.item.findUnique({
+    where: { id },
+    include: {
+      project: true,
+    },
+  });
+
+  if (!currentItem) {
+    throw new Error("Item not found");
+  }
+
   const item = await prisma.item.update({
     where: { id },
     data: {
@@ -174,6 +285,8 @@ export async function updateItem(
       ...(data.notes && { notes: data.notes }),
       ...(data.status && { status: data.status }),
       ...(data.projectId !== undefined && { projectId: data.projectId }),
+      ...(data.priority !== undefined && { priority: data.priority }),
+      ...(data.estimated !== undefined && { estimated: data.estimated }),
       ...(data.contextIds && {
         contexts: {
           set: data.contextIds.map((id) => ({ id })),
@@ -184,5 +297,63 @@ export async function updateItem(
       contexts: true,
     },
   });
+
+  // Add system comments for changes
+  if (data.status && currentItem.status !== data.status) {
+    await addComment(
+      id,
+      `Status changed from ${currentItem.status} to ${data.status}`,
+      CommentType.STATUS_CHANGE
+    );
+  }
+
+  if (data.priority !== undefined && currentItem.priority !== data.priority) {
+    await addComment(
+      id,
+      `Priority changed from ${currentItem.priority} to ${data.priority}`,
+      CommentType.PRIORITY_CHANGE
+    );
+  }
+
+  if (data.estimated !== undefined && currentItem.estimated !== data.estimated) {
+    await addComment(
+      id,
+      `Estimate changed from ${currentItem.estimated || 0} to ${data.estimated} minutes`,
+      CommentType.ESTIMATE_CHANGE
+    );
+  }
+
   return item;
+}
+
+export async function addDependency(itemId: string, blockerTaskId: string) {
+  const dependency = await prisma.taskDependency.create({
+    data: {
+      dependentTaskId: itemId,
+      blockerTaskId,
+    },
+  });
+
+  await addComment(
+    itemId,
+    `Added dependency on task ${blockerTaskId}`,
+    CommentType.DEPENDENCY_ADDED
+  );
+
+  return dependency;
+}
+
+export async function removeDependency(itemId: string, blockerTaskId: string) {
+  await prisma.taskDependency.deleteMany({
+    where: {
+      dependentTaskId: itemId,
+      blockerTaskId,
+    },
+  });
+
+  await addComment(
+    itemId,
+    `Removed dependency on task ${blockerTaskId}`,
+    CommentType.DEPENDENCY_REMOVED
+  );
 }

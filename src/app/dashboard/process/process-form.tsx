@@ -2,7 +2,8 @@
 
 import { processItem } from "@/actions/items";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { CommentList } from "@/components/comments/comment-list";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
@@ -90,9 +91,7 @@ export function ProcessForm({
       setError("");
       const contextIds = contextId ? [contextId] : [];
       await processItem(item.id as string, { status, projectId, contextIds });
-      removeItem(item.id as string);
       router.refresh();
-      router.push("/inbox");
     } catch (err) {
       setError(
         `Failed to process item: ${err instanceof Error ? err.message : "Please try again"}`,
@@ -323,6 +322,12 @@ export function ProcessForm({
           </Button>
         </form>
       </CardContent>
+      <CardFooter className="flex-col space-y-4 pt-6">
+        <div className="w-full border-t pt-6">
+          <h3 className="mb-4 text-lg font-semibold">Comments & Activity Log</h3>
+          <CommentList itemId={item.id as string} />
+        </div>
+      </CardFooter>
     </Card>
   );
 }
