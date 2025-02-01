@@ -114,6 +114,9 @@ export async function processItem(
     status: ItemStatus;
     projectId?: string;
     contextIds?: string[];
+    notes?: string;
+    estimated?: number;
+    dueDate?: Date;
   },
 ) {
   const { user } = await auth();
@@ -140,6 +143,9 @@ export async function processItem(
       contexts: {
         set: data.contextIds?.map((id) => ({ id })) || [],
       },
+      notes: data.notes,
+      estimated: data.estimated,
+      dueDate: data.dueDate,
     },
   });
 

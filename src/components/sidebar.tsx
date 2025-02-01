@@ -2,11 +2,35 @@
 
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+
+interface Profile {
+  name: string;
+  avatar?: string;
+}
 
 export function Sidebar() {
   const pathname = usePathname();
+  const [profile, setProfile] = useState<Profile | null>(null);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await fetch('/api/profile');
+        if (response.ok) {
+          const data = await response.json();
+          setProfile(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch profile:', error);
+      }
+    };
+
+    fetchProfile();
+  }, []);
 
   const navItems = [
     // Task Workflow
@@ -116,18 +140,34 @@ export function Sidebar() {
           ))}
         </nav>
 
-        <div className="space-y-2 border-t border-border pt-4">
+        <div className="space-y-4 border-t border-border pt-4">
+          <Link href="/dashboard/profile">
+            <Button
+              variant="ghost"
+              className="w-full justify-start hover:bg-accent"
+            >
+              <div className="flex items-center gap-3">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={profile?.avatar} />
+                  <AvatarFallback>{profile?.name?.charAt(0) || '?'}</AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col items-start">
+                  <span className="text-sm font-medium">{profile?.name || 'Setup Profile'}</span>
+                  <span className="text-xs text-muted-foreground">View Profile</span>
+                </div>
+              </div>
+            </Button>
+          </Link>
           <Link href="/api/auth/logout">
             <Button
               variant="ghost"
-              className="w-full justify-start transition-colors duration-200 hover:bg-destructive/20 hover:text-destructive"
+              className="w-full justify-start text-left transition-all duration-200 hover:translate-x-1 hover:bg-destructive/20 hover:text-destructive"
             >
-              <span className="mr-3">🚪</span>
+              <span className="mr-3 transform transition-transform duration-200 group-hover:scale-110">🚪</span>
               Logout
             </Button>
           </Link>
-        </div>
-      </div>
+        </div>      </div>
     </aside>
   );
 }

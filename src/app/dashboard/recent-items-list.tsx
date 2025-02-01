@@ -40,7 +40,7 @@ export function RecentItemsList({ items }: RecentItemsListProps) {
             <li key={item.id} className="flex items-center justify-between">
               <div>
                 <Link
-                  href={`/process?id=${item.id}`}
+                  href={`/dashboard/process?id=${item.id}`}
                   className="font-medium hover:underline"
                 >
                   {item.title}

@@ -101,7 +101,7 @@ export default async function DashboardPage() {
 
       <div className="grid gap-6 md:grid-cols-7">
         <div className="space-y-6 md:col-span-4">
-          <QuickAddForm userId={user.id} />
+          <QuickAddForm />
 
           <Card>
             <CardHeader>

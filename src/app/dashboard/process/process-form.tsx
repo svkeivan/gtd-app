@@ -1,10 +1,23 @@
 "use client";
 
 import { processItem } from "@/actions/items";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { CommentList } from "@/components/comments/comment-list";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Progress } from "@/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
@@ -13,9 +26,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { useAppStore } from "@/lib/store";
 import { Context, Item, ItemStatus, Project } from "@prisma/client";
-import { CalendarIcon, Loader2, NotebookIcon } from "lucide-react";
+import { format } from "date-fns";
+import {
+  CalendarIcon,
+  ChevronDown,
+  ChevronUp,
+  Loader2,
+  NotebookIcon,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -32,17 +53,36 @@ export function ProcessForm({
   projects: Project[];
   contexts: Context[];
 }) {
-  const [status, setStatus] = useState<ItemStatus>((item.status as ItemStatus) || "INBOX");
+  const [status, setStatus] = useState<ItemStatus>(
+    (item.status as ItemStatus) || "INBOX",
+  );
   const [projectId, setProjectId] = useState((item.projectId as string) || "");
   const [contextId, setContextId] = useState(
     (item.contexts[0]?.id as string) || "",
   );
+  const [description, setDescription] = useState(item.notes || "");
+  const [estimate, setEstimate] = useState(item.estimated?.toString() || "");
+  const [dueDate, setDueDate] = useState<Date | undefined>(
+    item.dueDate ? new Date(item.dueDate) : undefined,
+  );
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState("");
+  const [showComments, setShowComments] = useState(false);
+  const [progress, setProgress] = useState(0);
   const router = useRouter();
   const { removeItem } = useAppStore();
 
   const currentProject = projects.find((p) => p.id === item.projectId);
+
+  // Calculate progress
+  useEffect(() => {
+    let completed = 0;
+    if (status) completed += 25;
+    if (description) completed += 25;
+    if (estimate) completed += 25;
+    if (projectId || contextId) completed += 25;
+    setProgress(completed);
+  }, [status, description, estimate, projectId, contextId]);
 
   // Add keyboard shortcuts
   useEffect(() => {
@@ -90,7 +130,14 @@ export function ProcessForm({
       setIsProcessing(true);
       setError("");
       const contextIds = contextId ? [contextId] : [];
-      await processItem(item.id as string, { status, projectId, contextIds });
+      await processItem(item.id as string, {
+        status,
+        projectId,
+        contextIds,
+        notes: description,
+        estimated: estimate ? parseInt(estimate) : undefined,
+        dueDate,
+      });
       router.refresh();
     } catch (err) {
       setError(
@@ -102,8 +149,10 @@ export function ProcessForm({
   };
 
   return (
-    <Card className="transition-all duration-200 hover:shadow-md">
-      <CardHeader className="border-b pb-6">
+    <Card className="mx-auto max-w-4xl transition-all duration-200 hover:shadow-md">
+      <CardHeader className="space-y-4 border-b pb-6">
+        <Progress value={progress} className="h-2" />
+
         <div className="flex items-start justify-between">
           <div className="space-y-2">
             <CardTitle className="text-2xl font-bold">
@@ -130,16 +179,20 @@ export function ProcessForm({
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        <form onSubmit={handleSubmit} className="space-y-8">
-          <div className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-4 rounded-lg bg-muted/30 p-4">
             <div className="flex items-center justify-between">
-              <Label className="text-lg font-semibold">Process as</Label>
+              <Label className="text-lg font-semibold">1. Process as</Label>
               <span className="text-sm text-muted-foreground">
                 Press key in (brackets) for quick selection
               </span>
             </div>
             {error && <div className="text-sm text-destructive">{error}</div>}
-            <RadioGroup onValueChange={(value) => setStatus(value as ItemStatus)} required value={status}>
+            <RadioGroup
+              onValueChange={(value) => setStatus(value as ItemStatus)}
+              required
+              value={status}
+            >
               <div className="grid grid-cols-3 gap-4">
                 <div
                   className={`rounded-lg border p-4 transition-all duration-200 hover:border-primary hover:bg-primary/5 ${
@@ -264,46 +317,122 @@ export function ProcessForm({
               </div>
             </RadioGroup>
           </div>
-          <div className="flex gap-4">
-            <div className="flex-1 space-y-2">
-              <Label htmlFor="project_select" className="text-lg">
-                Project (optional)
+          <div className="space-y-4 rounded-lg bg-muted/30 p-4">
+            <Label className="text-lg font-semibold">2. Add Details</Label>
+            <div className="space-y-2">
+              <Label htmlFor="description" className="text-lg">
+                Description
               </Label>
-              <Select value={projectId} onValueChange={setProjectId}>
-                <SelectTrigger id="project_select">
-                  <SelectValue placeholder="Select a project" />
-                </SelectTrigger>
-                <SelectContent>
-                  {projects.map((project) => (
-                    <SelectItem
-                      key={project.id as string}
-                      value={project.id as string}
-                    >
-                      {project.title as string}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Textarea
+                id="description"
+                placeholder="Add more details about this task..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="min-h-[100px]"
+              />
             </div>
-            <div className="flex-1 space-y-2">
-              <Label htmlFor="context_select" className="text-lg">
-                Context (optional)
-              </Label>
-              <Select value={contextId} onValueChange={setContextId}>
-                <SelectTrigger id="context_select">
-                  <SelectValue placeholder="Select a context" />
-                </SelectTrigger>
-                <SelectContent>
-                  {contexts.map((context) => (
-                    <SelectItem
-                      key={context.id as string}
-                      value={context.id as string}
+
+            <div className="flex gap-4">
+              <div className="flex-1 space-y-2">
+                <Label htmlFor="estimate" className="text-lg">
+                  Time Estimate (minutes)
+                </Label>
+                <Input
+                  id="estimate"
+                  type="number"
+                  placeholder="e.g. 30"
+                  value={estimate}
+                  onChange={(e) => setEstimate(e.target.value)}
+                />
+              </div>
+
+              <div className="flex-1 space-y-2">
+                <Label className="text-lg">Due Date (optional)</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={`w-full justify-start text-left font-normal ${
+                        !dueDate && "text-muted-foreground"
+                      }`}
                     >
-                      {context.name as string}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                      {dueDate ? format(dueDate, "PPP") : "Pick a date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={dueDate}
+                      onSelect={setDueDate}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-4 rounded-lg bg-muted/30 p-4">
+            <Label className="mb-4 block text-lg font-semibold">
+              3. Organize
+            </Label>
+            <div className="flex gap-4">
+              <div className="flex-1 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <Label htmlFor="project_select" className="text-lg">
+                    Project (optional)
+                  </Label>
+                  <a
+                    href="/dashboard/projects"
+                    className="text-sm text-muted-foreground hover:text-primary"
+                  >
+                    + Create Project
+                  </a>
+                </div>
+                <Select value={projectId} onValueChange={setProjectId}>
+                  <SelectTrigger id="project_select">
+                    <SelectValue placeholder="Select a project" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projects.map((project) => (
+                      <SelectItem
+                        key={project.id as string}
+                        value={project.id as string}
+                      >
+                        {project.title as string}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex-1 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <Label htmlFor="context_select" className="text-lg">
+                    Context (optional)
+                  </Label>
+                  <a
+                    href="/dashboard/contexts"
+                    className="text-sm text-muted-foreground hover:text-primary"
+                  >
+                    + Create Context
+                  </a>
+                </div>
+                <Select value={contextId} onValueChange={setContextId}>
+                  <SelectTrigger id="context_select">
+                    <SelectValue placeholder="Select a context" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {contexts.map((context) => (
+                      <SelectItem
+                        key={context.id as string}
+                        value={context.id as string}
+                      >
+                        {context.name as string}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
           <Button
@@ -322,12 +451,17 @@ export function ProcessForm({
           </Button>
         </form>
       </CardContent>
-      <CardFooter className="flex-col space-y-4 pt-6">
-        <div className="w-full border-t pt-6">
-          <h3 className="mb-4 text-lg font-semibold">Comments & Activity Log</h3>
-          <CommentList itemId={item.id as string} />
-        </div>
-      </CardFooter>
+      <div className="border-t p-6">
+        <Collapsible open={showComments} onOpenChange={setShowComments}>
+          <CollapsibleTrigger className="flex items-center gap-2 text-lg font-semibold transition-colors hover:text-primary">
+            {showComments ? <ChevronUp /> : <ChevronDown />}
+            Comments & Activity Log
+          </CollapsibleTrigger>
+          <CollapsibleContent className="pt-4">
+            <CommentList itemId={item.id as string} />
+          </CollapsibleContent>
+        </Collapsible>
+      </div>
     </Card>
   );
 }

@@ -75,7 +75,7 @@ export function ProjectCard({ project }: { project: ProjectWithItems }) {
   return (
     <Card className="transition-shadow duration-200 hover:shadow-lg">
       <CardHeader className="pb-2">
-        <div className="flex items-start justify-between">
+        <div className="flex items-center justify-between">
           <div className="flex-1 space-y-1">
             {isEditing ? (
               <Input
@@ -89,13 +89,13 @@ export function ProjectCard({ project }: { project: ProjectWithItems }) {
                 {project.title}
               </CardTitle>
             )}
-            <Badge
-              variant="secondary"
-              className={`${statusColors[status as keyof typeof statusColors]}`}
-            >
-              {statusLabels[status as keyof typeof statusLabels]}
-            </Badge>
           </div>
+          <Badge
+            variant="secondary"
+            className={`${statusColors[status as keyof typeof statusColors]}`}
+          >
+            {statusLabels[status as keyof typeof statusLabels]}
+          </Badge>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">

@@ -16,7 +16,7 @@ export function DashboardSummary({ data }: DashboardSummaryProps) {
     {
       title: "Inbox",
       count: data.inboxCount,
-      link: "/inbox",
+      link: "/dashboard/inbox",
       icon: Inbox,
       color: "text-blue-500",
       description: "Capture your thoughts",
@@ -24,7 +24,7 @@ export function DashboardSummary({ data }: DashboardSummaryProps) {
     {
       title: "Next Actions",
       count: data.nextActionsCount,
-      link: "/next-actions",
+      link: "/dashboard/next-actions",
       icon: CheckSquare,
       color: "text-green-500",
       description: "Ready to do",
@@ -32,7 +32,7 @@ export function DashboardSummary({ data }: DashboardSummaryProps) {
     {
       title: "Projects",
       count: data.projectsCount,
-      link: "/projects",
+      link: "/dashboard/projects",
       icon: FolderGit2,
       color: "text-purple-500",
       description: "Track your goals",
@@ -40,7 +40,7 @@ export function DashboardSummary({ data }: DashboardSummaryProps) {
     {
       title: "Contexts",
       count: data.contextsCount,
-      link: "/contexts",
+      link: "/dashboard/contexts",
       icon: Tags,
       color: "text-orange-500",
       description: "Organize by context",

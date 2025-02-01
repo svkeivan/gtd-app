@@ -79,9 +79,9 @@ export function CommentList({ itemId }: { itemId: string }) {
   return (
     <div className="space-y-4">
       <CommentForm itemId={itemId} onCommentAdded={onCommentAdded} />
-      
+
       <Card className="p-4">
-        <ScrollArea className="h-[400px] pr-4">
+        <ScrollArea className="pr-4">
           <div className="space-y-4">
             {comments.map((comment) => (
               <div
