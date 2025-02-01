@@ -65,10 +65,10 @@ export async function getAnalyticsData(userId: string): Promise<{
     const date = format(subDays(endDate, i), 'yyyy-MM-dd')
     const inProgressCount = projectProgressTrend.filter(
       (item: ProjectProgressItem) => format(item.createdAt, 'yyyy-MM-dd') === date && item.status === 'ACTIVE'
-    ).reduce((sum: number, item) => sum + item._count.id, 0)
+    ).reduce((sum: number, item: ProjectProgressItem) => sum + item._count.id, 0)
     const completedCount = projectProgressTrend.filter(
       (item: ProjectProgressItem) => format(item.createdAt, 'yyyy-MM-dd') === date && item.status === 'COMPLETED'
-    ).reduce((sum: number, item) => sum + item._count.id, 0)
+    ).reduce((sum: number, item: ProjectProgressItem) => sum + item._count.id, 0)
     return { date, inProgress: inProgressCount, completed: completedCount }
   }).reverse()
   return {
