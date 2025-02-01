@@ -42,8 +42,8 @@ export async function getCalendarEvents(userId: string) {
     .map((task) => ({
       id: task.id,
       title: task.title,
-      start: task.dueDate!,
-      end: task.dueDate!,
+      start: task.dueDate as Date,
+      end: task.dueDate as Date,
       allDay: true,
       isTask: true,
       itemId: task.id,
