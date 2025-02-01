@@ -32,11 +32,12 @@ export async function createContext(data: { name: string; description?: string; 
   return context
 }
 
-export async function updateContext(contextId: string, data: { name: string }) {
+export async function updateContext(contextId: string, data: { name: string; description?: string }) {
   const context = await prisma.context.update({
     where: { id: contextId },
     data: {
       name: data.name,
+      description: data.description,
     },
   })
   revalidatePath('/contexts')

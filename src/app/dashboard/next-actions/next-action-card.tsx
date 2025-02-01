@@ -40,47 +40,23 @@ export function NextActionCard({ action }: NextActionCardProps) {
   };
 
   return (
-    <Card className="group relative transition-shadow duration-200 hover:shadow-md">
-      <div className="absolute left-2 top-1/2 -translate-y-1/2 cursor-grab opacity-30 active:cursor-grabbing group-hover:opacity-100">
-        <GripVertical className="h-5 w-5" />
-      </div>
-      <CardHeader className="pl-10">
-        <CardTitle className="flex items-center gap-3">
-          <Checkbox
-            checked={isCompleting}
-            onCheckedChange={handleComplete}
-            disabled={isCompleting}
-            className="h-5 w-5"
-          />
-          <span className={isCompleting ? "text-gray-400 line-through" : ""}>
-            {action.title}
-          </span>
-          {action.dueDate && (
-            <Badge
-              variant="secondary"
-              className="ml-auto flex items-center gap-1"
-            >
-              <Calendar className="h-3 w-3" />
-              {new Date(action.dueDate).toLocaleDateString()}
-            </Badge>
-          )}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="pl-10">
-        {action.notes && (
-          <p className="mb-3 text-sm text-gray-600">{action.notes}</p>
-        )}
-        <div className="flex flex-wrap items-center gap-2">
-          {action.project && (
-            <Badge variant="secondary" className="font-medium">
-              {action.project.title}
-            </Badge>
-          )}
-          {action?.contexts?.map((context: Context) => (
-            <Badge key={context.id} variant="outline" className="font-medium">
-              {context.name}
-            </Badge>
-          ))}
+    <Card className="group relative transition-all duration-200 hover:shadow-lg">
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-1 items-center gap-3">
+            <div className="cursor-grab opacity-30 active:cursor-grabbing group-hover:opacity-100">
+              <GripVertical className="h-5 w-5" />
+            </div>
+            <Checkbox
+              checked={isCompleting}
+              onCheckedChange={handleComplete}
+              disabled={isCompleting}
+              className="h-5 w-5"
+            />
+            <CardTitle className={`text-lg ${isCompleting ? "text-gray-400 line-through" : ""}`}>
+              {action.title}
+            </CardTitle>
+          </div>
           {action.priority !== undefined && (
             <Badge
               variant={
@@ -90,22 +66,44 @@ export function NextActionCard({ action }: NextActionCardProps) {
                     ? "default"
                     : "secondary"
               }
-              className="ml-auto"
             >
               Priority {action.priority + 1}
             </Badge>
           )}
         </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {action.notes && (
+          <p className="text-sm text-gray-600">{action.notes}</p>
+        )}
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            {action.project && (
+              <Badge variant="secondary" className="font-medium">
+                {action.project.title}
+              </Badge>
+            )}
+            {action?.contexts?.map((context: Context) => (
+              <Badge key={context.id} variant="outline" className="font-medium">
+                {context.name}
+              </Badge>
+            ))}
+          </div>
+          {action.dueDate && (
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <Calendar className="h-4 w-4" />
+              <span>Due {new Date(action.dueDate).toLocaleDateString()}</span>
+            </div>
+          )}
+        </div>
       </CardContent>
-      <CardFooter className="justify-end pl-10">
+      <CardFooter className="justify-end space-x-2">
         <Button
-          variant="ghost"
-          size="sm"
-          className="flex items-center gap-2"
+          variant="outline"
+          size="icon"
           onClick={() => router.push(`/process?id=${action.id}`)}
         >
           <Pencil className="h-4 w-4" />
-          Edit
         </Button>
       </CardFooter>
     </Card>

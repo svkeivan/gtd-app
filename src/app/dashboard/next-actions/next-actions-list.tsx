@@ -182,43 +182,34 @@ export function NextActionsList({
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
-        <div className="relative max-w-md flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
-          <Input
-            type="text"
-            placeholder="Search actions..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+      <div className="mb-6 rounded-lg border bg-gray-50/50 p-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="relative max-w-md flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+            <Input
+              type="text"
+              placeholder="Search actions..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-[140px]">
+                <SortAsc className="mr-2 h-4 w-4" />
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="priority">Priority</SelectItem>
+                <SelectItem value="title">Title</SelectItem>
+                <SelectItem value="dueDate">Due Date</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2"
-          >
-            <Filter className="h-4 w-4" />
-            Filters
-          </Button>
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="w-[140px]">
-              <SortAsc className="mr-2 h-4 w-4" />
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="priority">Priority</SelectItem>
-              <SelectItem value="title">Title</SelectItem>
-              <SelectItem value="dueDate">Due Date</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
 
-      {showFilters && (
-        <div className="mb-6 grid gap-4 rounded-lg border bg-gray-50/50 p-4 md:grid-cols-3">
+        <div className="grid gap-4 border-t pt-4 md:grid-cols-3">
           <div>
             <Label htmlFor="project-filter">Project</Label>
             <Select value={filterProject} onValueChange={setFilterProject}>
@@ -266,7 +257,8 @@ export function NextActionsList({
             </Select>
           </div>
         </div>
-      )}
+      </div>
+
       <div className="min-h-[200px]">
         <DragDropContext onDragEnd={onDragEnd}>
           <Droppable droppableId="next-actions">
