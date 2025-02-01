@@ -49,7 +49,13 @@ export async function getCalendarEvents(userId: string) {
       itemId: task.id,
     }));
   // Convert time entries to calendar events
-  const timeEvents = timeEntries.map((entry) => ({
+  const timeEvents = timeEntries.map((entry: { 
+    id: string; 
+    item: { title: string }; 
+    duration: number; 
+    startTime: Date; 
+    endTime: Date | null;
+  }) => ({
     id: entry.id,
     title: `${entry.item.title} (${entry.duration}min)`,
     start: entry.startTime,
