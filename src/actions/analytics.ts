@@ -46,13 +46,19 @@ export async function getAnalyticsData(userId: string) {
     return { date, completed: completedCount }
   }).reverse()
 
+  type ProjectProgressItem = {
+    createdAt: Date;
+    status: string;
+    _count: { id: number };
+  }
+
   const projectProgressData = Array.from({ length: 30 }, (_, i) => {
     const date = format(subDays(endDate, i), 'yyyy-MM-dd')
     const inProgressCount = projectProgressTrend.filter(
-      item => format(item.createdAt, 'yyyy-MM-dd') === date && item.status === 'ACTIVE'
+      (item: ProjectProgressItem) => format(item.createdAt, 'yyyy-MM-dd') === date && item.status === 'ACTIVE'
     ).reduce((sum, item) => sum + item._count.id, 0)
     const completedCount = projectProgressTrend.filter(
-      item => format(item.createdAt, 'yyyy-MM-dd') === date && item.status === 'COMPLETED'
+      (item: ProjectProgressItem) => format(item.createdAt, 'yyyy-MM-dd') === date && item.status === 'COMPLETED'
     ).reduce((sum, item) => sum + item._count.id, 0)
     return { date, inProgress: inProgressCount, completed: completedCount }
   }).reverse()
@@ -62,4 +68,3 @@ export async function getAnalyticsData(userId: string) {
     projectProgressTrend: projectProgressData,
   }
 }
-
