@@ -18,6 +18,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { logout } from "@/actions/auth";
 
 interface Profile {
   name: string;
@@ -172,15 +173,16 @@ export function Sidebar() {
               </div>
             </Button>
           </Link>
-          <Link href="/api/auth/logout">
+          <form action={logout}>
             <Button
+              type="submit"
               variant="ghost"
               className="w-full justify-start text-left transition-all duration-200 hover:translate-x-1 hover:bg-destructive/20 hover:text-destructive"
             >
               <LogOut className="mr-3 h-4 w-4" />
               Logout
             </Button>
-          </Link>
+          </form>
         </div>{" "}
       </div>
     </aside>

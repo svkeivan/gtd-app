@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
+import { getProfile, updateProfile, type ProfileFormData, profileSchema } from '@/actions/profile'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -12,18 +13,8 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
-const profileSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  language: z.enum(['en', 'es', 'fr', 'de']),
-  theme: z.enum(['light', 'dark', 'system']),
-  timezone: z.string(),
-  avatar: z.string().optional(),
-})
-
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
-
-type ProfileFormData = z.infer<typeof profileSchema>
 
 export function ProfileSetupForm() {
   const [progress, setProgress] = useState(0)
@@ -48,14 +39,11 @@ export function ProfileSetupForm() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await fetch('/api/profile')
-        if (!response.ok) throw new Error('Failed to fetch profile')
-        
-        const data = await response.json()
-        const initialData = {
+        const data = await getProfile()
+        const initialData: ProfileFormData = {
           name: data.name || '',
-          language: data.language || 'en',
-          theme: data.theme || 'system',
+          language: (data.language as ProfileFormData['language']) || 'en',
+          theme: (data.theme as ProfileFormData['theme']) || 'system',
           timezone: data.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
           avatar: data.avatar || '',
         }
@@ -100,20 +88,9 @@ export function ProfileSetupForm() {
       setError(null)
       
       // Optimistically update the form state
-      const previousData = form.getValues()
       form.reset(data)
       
-      const response = await fetch('/api/profile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to update profile')
-      }
-
-      const result = await response.json()
+      await updateProfile(data)
       setOriginalData(data)
       setSuccess(true)
       setError(null)
@@ -122,6 +99,8 @@ export function ProfileSetupForm() {
       form.reset(originalData || {})
       setError(err instanceof Error ? err.message : 'An error occurred')
       setSuccess(false)
+    } finally {
+      setIsSaving(false)
     }
   }
 

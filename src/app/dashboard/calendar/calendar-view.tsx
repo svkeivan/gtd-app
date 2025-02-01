@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { getNextItems, updateItemPlanning } from "@/actions/items";
 import {
   Dialog,
   DialogContent,
@@ -84,9 +85,8 @@ export function CalendarView({ initialEvents }: CalendarViewProps) {
   useEffect(() => {
     // Fetch available tasks when dialog opens
     if (selectedSlot) {
-      fetch("/api/items?status=NEXT")
-        .then((res) => res.json())
-        .then((data) => setTasks(data))
+      getNextItems()
+        .then(setTasks)
         .catch((error) => console.error("Error fetching tasks:", error));
     }
   }, [selectedSlot]);
@@ -112,18 +112,10 @@ export function CalendarView({ initialEvents }: CalendarViewProps) {
     const endTime = moment(start).add(duration, "minutes").toDate();
 
     try {
-      const response = await fetch(`/api/items/${event.id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          plannedDate: start,
-          estimated: duration,
-        }),
+      await updateItemPlanning(event.id, {
+        plannedDate: start,
+        estimated: duration,
       });
-
-      if (!response.ok) throw new Error("Failed to update task");
 
       const newEvent: CalendarEvent = {
         id: event.id,
@@ -157,18 +149,10 @@ export function CalendarView({ initialEvents }: CalendarViewProps) {
     if (!event.isTask) return;
 
     try {
-      const response = await fetch(`/api/items/${event.itemId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          plannedDate: start,
-          estimated: moment(end).diff(moment(start), "minutes"),
-        }),
+      await updateItemPlanning(event.itemId!, {
+        plannedDate: start,
+        estimated: moment(end).diff(moment(start), "minutes"),
       });
-
-      if (!response.ok) throw new Error("Failed to update task");
 
       const updatedEvent = {
         ...event,
@@ -194,30 +178,19 @@ export function CalendarView({ initialEvents }: CalendarViewProps) {
     );
 
     try {
-      const response = await fetch(`/api/items/${task.id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          plannedDate: selectedSlot.start,
-          estimated: duration,
-        }),
+      const updatedTask = await updateItemPlanning(task.id, {
+        plannedDate: selectedSlot.start,
+        estimated: duration,
       });
 
-      if (!response.ok) throw new Error("Failed to update task");
-
-      const updatedTask = await response.json();
       const newEvent: CalendarEvent = {
-        id: updatedTask.id,
-        title: updatedTask.title,
-        start: new Date(updatedTask.plannedDate),
-        end: moment(updatedTask.plannedDate)
-          .add(updatedTask.estimated, "minutes")
-          .toDate(),
+        id: task.id,
+        title: task.title,
+        start: new Date(selectedSlot.start),
+        end: moment(selectedSlot.start).add(duration, "minutes").toDate(),
         isTask: true,
-        itemId: updatedTask.id,
-        estimated: updatedTask.estimated,
+        itemId: task.id,
+        estimated: duration,
       };
 
       setEvents([...events, newEvent]);

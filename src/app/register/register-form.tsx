@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { register } from '@/actions/auth'
 import Link from 'next/link'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -22,28 +23,7 @@ export function RegisterForm() {
     setError('')
 
     try {
-      const res = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      })
-
-      if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || 'Registration failed')
-      }
-
-      // Automatically log in after registration
-      const loginRes = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      })
-
-      if (!loginRes.ok) {
-        throw new Error('Login after registration failed')
-      }
-
+      await register(email, password)
       router.push('/dashboard')
       router.refresh()
     } catch (err) {
@@ -98,4 +78,3 @@ export function RegisterForm() {
     </Card>
   )
 }
-

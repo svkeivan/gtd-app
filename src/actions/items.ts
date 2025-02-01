@@ -363,3 +363,50 @@ export async function removeDependency(itemId: string, blockerTaskId: string) {
     CommentType.DEPENDENCY_REMOVED
   );
 }
+
+export async function getNextItems() {
+  const { user } = await auth();
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  const items = await prisma.item.findMany({
+    where: {
+      userId: user.id,
+      status: "NEXT_ACTION",
+    },
+    select: {
+      id: true,
+      title: true,
+      status: true,
+      plannedDate: true,
+      estimated: true,
+    },
+  });
+
+  return items;
+}
+
+export async function updateItemPlanning(
+  itemId: string,
+  data: {
+    plannedDate: Date;
+    estimated: number;
+  }
+) {
+  const { user } = await auth();
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  const item = await prisma.item.update({
+    where: { id: itemId },
+    data: {
+      plannedDate: data.plannedDate,
+      estimated: data.estimated,
+    },
+  });
+
+  revalidatePath('/calendar');
+  return item;
+}
