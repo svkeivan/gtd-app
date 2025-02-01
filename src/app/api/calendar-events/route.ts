@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     const newEvent = await prisma.item.create({
       data: {
         title,
-        status: "SCHEDULED",
+        status: "NEXT_ACTION",
         dueDate: new Date(start),
         userId: user.id,
       },

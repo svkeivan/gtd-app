@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAppStore } from "@/lib/store";
-import { Context, Item, Project } from "@prisma/client";
+import { Context, Item, ItemStatus, Project } from "@prisma/client";
 import { CalendarIcon, Loader2, NotebookIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -31,7 +31,7 @@ export function ProcessForm({
   projects: Project[];
   contexts: Context[];
 }) {
-  const [status, setStatus] = useState((item.status as string) || "");
+  const [status, setStatus] = useState<ItemStatus>((item.status as ItemStatus) || "INBOX");
   const [projectId, setProjectId] = useState((item.projectId as string) || "");
   const [contextId, setContextId] = useState(
     (item.contexts[0]?.id as string) || "",
@@ -140,7 +140,7 @@ export function ProcessForm({
               </span>
             </div>
             {error && <div className="text-sm text-destructive">{error}</div>}
-            <RadioGroup onValueChange={setStatus} required value={status}>
+            <RadioGroup onValueChange={(value) => setStatus(value as ItemStatus)} required value={status}>
               <div className="grid grid-cols-3 gap-4">
                 <div
                   className={`rounded-lg border p-4 transition-all duration-200 hover:border-primary hover:bg-primary/5 ${

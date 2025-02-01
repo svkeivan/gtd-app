@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { Item, Project, Tag } from "@prisma/client";
+import { Item, ItemStatus, Project, Tag } from "@prisma/client";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { useState } from "react";
@@ -107,15 +107,21 @@ export function EditItemDialog({
                 <label className="text-sm font-medium">Status</label>
                 <Select
                   value={item.status}
-                  onValueChange={(value) => setItem({ ...item, status: value })}
+                  onValueChange={(value: ItemStatus) => setItem({ ...item, status: value })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="TODO">TODO</SelectItem>
-                    <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                    <SelectItem value="DONE">Done</SelectItem>
+                    <SelectItem value="INBOX">Inbox</SelectItem>
+                    <SelectItem value="NEXT_ACTION">Next Action</SelectItem>
+                    <SelectItem value="PROJECT">Project</SelectItem>
+                    <SelectItem value="WAITING_FOR">Waiting For</SelectItem>
+                    <SelectItem value="SOMEDAY_MAYBE">Someday/Maybe</SelectItem>
+                    <SelectItem value="REFERENCE">Reference</SelectItem>
+                    <SelectItem value="COMPLETED">Completed</SelectItem>
+                    <SelectItem value="DELEGATED">Delegated</SelectItem>
+                    <SelectItem value="TRASHED">Trashed</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -123,18 +129,18 @@ export function EditItemDialog({
               <div className="space-y-2">
                 <label className="text-sm font-medium">Priority</label>
                 <Select
-                  value={item.priority}
+                  value={item.priority.toString()}
                   onValueChange={(value) =>
-                    setItem({ ...item, priority: value })
+                    setItem({ ...item, priority: parseInt(value) })
                   }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select priority" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="LOW">Low</SelectItem>
-                    <SelectItem value="MEDIUM">Medium</SelectItem>
-                    <SelectItem value="HIGH">High</SelectItem>
+                    <SelectItem value="0">Low</SelectItem>
+                    <SelectItem value="1">Medium</SelectItem>
+                    <SelectItem value="2">High</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

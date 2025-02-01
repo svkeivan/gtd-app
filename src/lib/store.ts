@@ -1,4 +1,4 @@
-import { ContextListWithItem } from "@/types/project-types";
+import { ContextListWithItem, TagSummary } from "@/types/project-types";
 import { Context, Item, Project } from "@prisma/client";
 import { create } from "zustand";
 
@@ -19,16 +19,10 @@ interface DashboardData {
 }
 
 export interface NextAction extends Item {
-  project?: Project;
+  project?: Project | null;
   contexts?: Context[];
 }
 
-interface Tag {
-  id: string;
-  name: string;
-  color: string;
-  items: Item[];
-}
 
 interface AppState {
   items: Item[];
@@ -43,8 +37,8 @@ interface AppState {
   updateProject: (project: Project) => void;
   removeProject: (id: string) => void;
   setContexts: (contexts: ContextListWithItem[]) => void;
-  addContext: (context: Context) => void;
-  updateContext: (context: Context) => void;
+  addContext: (context: ContextListWithItem) => void;
+  updateContext: (context: ContextListWithItem) => void;
   removeContext: (id: string) => void;
   setNextActions: (nextActions: NextAction[]) => void;
   updateNextAction: (updatedAction: NextAction) => void;
@@ -54,10 +48,10 @@ interface AppState {
   dashboardData: DashboardData;
   setDashboardData: (data: DashboardData) => void;
   reorderNextActions: (reorderedActions: NextAction[]) => void;
-  tags: Tag[];
-  setTags: (tags: Tag[]) => void;
-  addTag: (tag: Tag) => void;
-  updateTag: (tag: Tag) => void;
+  tags: TagSummary[];
+  setTags: (tags: TagSummary[]) => void;
+  addTag: (tag: TagSummary) => void;
+  updateTag: (tag: TagSummary) => void;
   removeTag: (id: string) => void;
 }
 

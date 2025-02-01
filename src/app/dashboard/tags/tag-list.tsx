@@ -3,8 +3,9 @@
 import { useAppStore } from '@/lib/store'
 import { useEffect } from 'react'
 import { TagCard } from './tag-card'
+import { TagSummary } from '@/types/project-types'
 
-export function TagList({ initialTags }: { initialTags: any[] }) {
+export function TagList({ initialTags }: { initialTags: TagSummary[] }) {
   const { tags, setTags } = useAppStore()
 
   useEffect(() => {
@@ -19,4 +20,3 @@ export function TagList({ initialTags }: { initialTags: any[] }) {
     </div>
   )
 }
-

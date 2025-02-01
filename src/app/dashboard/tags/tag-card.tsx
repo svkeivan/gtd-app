@@ -11,11 +11,11 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useAppStore } from "@/lib/store";
-import { Tag } from "@prisma/client";
+import { TagSummary } from "@/types/project-types";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export function TagCard({ tag }: { tag: Tag }) {
+export function TagCard({ tag }: { tag: TagSummary }) {
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(tag.name);
   const [color, setColor] = useState(tag.color);
@@ -66,7 +66,6 @@ export function TagCard({ tag }: { tag: Tag }) {
             />
           </div>
         )}
-        <p>Items: {tag.items?.length || 0}</p>
       </CardContent>
       <CardFooter className="justify-end space-x-2">
         {isEditing ? (

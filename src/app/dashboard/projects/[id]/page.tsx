@@ -99,7 +99,7 @@ export default function ProjectPage() {
                 Completed Items
               </h3>
               <p className="text-3xl font-bold text-green-800">
-                {items.filter((item) => item.status === "completed").length}
+                {items.filter((item) => item.status === "COMPLETED").length}
               </p>
             </div>
             <div className="rounded-xl bg-purple-50 p-6 shadow-sm transition-all hover:bg-purple-100 hover:shadow">
@@ -109,7 +109,7 @@ export default function ProjectPage() {
               <p className="text-3xl font-bold text-purple-800">
                 {items.length > 0
                   ? Math.round(
-                      (items.filter((item) => item.status === "completed")
+                      (items.filter((item) => item.status === "COMPLETED")
                         .length /
                         items.length) *
                         100,
@@ -128,7 +128,7 @@ export default function ProjectPage() {
               <span className="text-sm font-medium text-gray-600">
                 {items.length > 0
                   ? Math.round(
-                      (items.filter((item) => item.status === "completed")
+                      (items.filter((item) => item.status === "COMPLETED")
                         .length /
                         items.length) *
                         100,
@@ -141,7 +141,7 @@ export default function ProjectPage() {
               value={
                 items.length > 0
                   ? Math.round(
-                      (items.filter((item) => item.status === "completed")
+                      (items.filter((item) => item.status === "COMPLETED")
                         .length /
                         items.length) *
                         100,
@@ -179,9 +179,12 @@ export default function ProjectPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Tasks</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="in_progress">In Progress</SelectItem>
-                <SelectItem value="not_started">Not Started</SelectItem>
+                <SelectItem value="COMPLETED">Completed</SelectItem>
+                <SelectItem value="NEXT_ACTION">Next Action</SelectItem>
+                <SelectItem value="PROJECT">Project</SelectItem>
+                <SelectItem value="WAITING_FOR">Waiting For</SelectItem>
+                <SelectItem value="SOMEDAY_MAYBE">Someday/Maybe</SelectItem>
+                <SelectItem value="REFERENCE">Reference</SelectItem>
               </SelectContent>
             </Select>
             <Select value={sortBy} onValueChange={setSortBy}>

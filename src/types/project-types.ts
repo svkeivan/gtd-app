@@ -1,10 +1,11 @@
-import { Context, Item, Project } from "@prisma/client";
+import { Context, Item, Project, Tag } from "@prisma/client";
 
 export type ProjectSummary = Pick<Project, "id" | "title">;
 export type ContextSummary = Pick<Context, "id" | "name">;
+export type TagSummary = Pick<Tag, "id" | "name" | "color">;
 
 export interface NextActionItem extends Item {
-  project?: ProjectSummary | null;
+  project?: ProjectSummary | null | undefined;
   contexts?: ContextSummary[];
 }
 

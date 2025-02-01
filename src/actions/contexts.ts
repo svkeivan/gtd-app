@@ -20,10 +20,11 @@ export async function getContexts(userId: string) {
   return contexts
 }
 
-export async function createContext(data: { name: string; userId: string }) {
+export async function createContext(data: { name: string; description?: string; userId: string }) {
   const context = await prisma.context.create({
     data: {
       name: data.name,
+      description: data.description,
       user: { connect: { id: data.userId } },
     },
   })
@@ -48,4 +49,3 @@ export async function deleteContext(contextId: string) {
   })
   revalidatePath('/contexts')
 }
-

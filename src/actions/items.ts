@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@/lib/auth";
-import { PrismaClient } from "@prisma/client";
+import { ItemStatus, PrismaClient } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { cache } from "react";
 
@@ -52,7 +52,7 @@ export async function getInboxItems(userId: string) {
 export async function processItem(
   itemId: string,
   data: {
-    status: string;
+    status: ItemStatus;
     projectId?: string;
     contextIds?: string[];
   },
@@ -89,7 +89,7 @@ export async function getNextActions(userId: string) {
   return nextActions;
 }
 
-export async function updateItemStatus(itemId: string, status: string) {
+export async function updateItemStatus(itemId: string, status: ItemStatus) {
   const item = await prisma.item.update({
     where: { id: itemId },
     data: { status },
@@ -162,7 +162,7 @@ export async function updateItem(
   data: {
     title?: string;
     notes?: string;
-    status?: string;
+    status?: ItemStatus;
     projectId?: string | null;
     contextIds?: string[];
   },

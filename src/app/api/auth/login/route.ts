@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 import { getIronSession } from "iron-session";
 import { ironOptions } from "@/lib/config";
+import { IronSessionData } from "iron-session";
 
 const prisma = new PrismaClient();
 
@@ -34,7 +35,7 @@ export async function POST(request: Request) {
     }
 
     // Create session
-    const session = await getIronSession(await cookies(), ironOptions);
+    const session = await getIronSession<IronSessionData>(await cookies(), ironOptions);
 
     session.user = {
       id: user.id,
