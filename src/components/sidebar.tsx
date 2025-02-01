@@ -1,10 +1,13 @@
 "use client";
 
+import { logout } from "@/actions/auth";
+import { getProfile } from "@/actions/profile";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   BarChart2,
+  Boxes,
   Calendar,
   CheckSquare,
   FolderKanban,
@@ -12,33 +15,42 @@ import {
   LayoutDashboard,
   LogOut,
   RefreshCw,
-  Boxes,
   Tags,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { logout } from "@/actions/auth";
+import { Skeleton } from "./ui/skeleton";
 
-interface Profile {
-  name: string;
-  avatar?: string;
-}
+type Profile = {
+  id: string;
+  name: string | null;
+  email: string;
+  language: string;
+  theme: string;
+  timezone: string;
+  avatar: string | null;
+  profileComplete: boolean;
+};
 
 export function Sidebar() {
   const pathname = usePathname();
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await fetch("/api/profile");
-        if (response.ok) {
-          const data = await response.json();
-          setProfile(data);
-        }
+        setIsLoading(true);
+        setError(null);
+        const data = await getProfile();
+        setProfile(data);
       } catch (error) {
+        setError(error instanceof Error ? error.message : "Failed to fetch profile");
         console.error("Failed to fetch profile:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -150,29 +162,50 @@ export function Sidebar() {
           ))}
         </nav>
         <div className="space-y-4 border-t border-border pt-4">
-          <Link href="/dashboard/profile">
+          {isLoading ? (
+            <div className="flex items-center gap-3 px-3 py-2">
+              <Skeleton className="h-8 w-8 rounded-full" />
+              <div className="space-y-1">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-3 w-16" />
+              </div>
+            </div>
+          ) : error ? (
             <Button
               variant="ghost"
-              className="w-full justify-start hover:bg-accent"
+              className="w-full justify-start text-destructive hover:bg-destructive/20"
+              onClick={() => window.location.reload()}
             >
-              <div className="flex items-center gap-3">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={profile?.avatar} />
-                  <AvatarFallback>
-                    {profile?.name?.charAt(0) || "?"}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col items-start">
-                  <span className="text-sm font-medium">
-                    {profile?.name || "Setup Profile"}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    View Profile
-                  </span>
-                </div>
+              <div className="flex flex-col items-start">
+                <span className="text-sm font-medium">Error Loading Profile</span>
+                <span className="text-xs">Click to retry</span>
               </div>
             </Button>
-          </Link>
+          ) : (
+            <Link href="/dashboard/profile">
+              <Button
+                variant="ghost"
+                className="w-full justify-start hover:bg-accent"
+              >
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={profile?.avatar || undefined} />
+                    <AvatarFallback>
+                      {profile?.name?.charAt(0) || "?"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col items-start">
+                    <span className="text-sm font-medium">
+                      {profile?.name || "Setup Profile"}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {profile?.profileComplete ? "View Profile" : "Complete Setup"}
+                    </span>
+                  </div>
+                </div>
+              </Button>
+            </Link>
+          )}
           <form action={logout}>
             <Button
               type="submit"

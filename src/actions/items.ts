@@ -410,3 +410,27 @@ export async function updateItemPlanning(
   revalidatePath('/calendar');
   return item;
 }
+
+export async function updateItemsPriority(items: { id: string; priority: number }[]) {
+  const { user } = await auth();
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  try {
+    await prisma.$transaction(
+      items.map((item) =>
+        prisma.item.update({
+          where: { id: item.id },
+          data: { priority: item.priority },
+        })
+      )
+    );
+
+    revalidatePath('/');
+    return { success: true };
+  } catch (error) {
+    console.error('Error reordering items:', error);
+    throw new Error('Failed to reorder items');
+  }
+}

@@ -30,6 +30,7 @@ import { Item, ItemStatus, Project, Tag } from "@prisma/client";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { useState } from "react";
+import { updateItem } from "@/actions/items";
 
 interface ItemWithProject extends Item {
   project?: Project;
@@ -53,31 +54,24 @@ export function EditItemDialog({
 
   const handleUpdate = async () => {
     try {
-      const response = await fetch(`/api/items/${item.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      const updatedItem = await updateItem(
+        item.id,
+        {
           title: item.title,
-          notes: item.notes,
+          notes: item.notes ?? undefined,
           status: item.status,
           priority: item.priority,
-          dueDate: item.dueDate,
-          estimated: item.estimated,
+          estimated: item.estimated ?? undefined,
           projectId: item.projectId,
-        }),
-      });
-
-      if (!response.ok) throw new Error("Failed to update item");
-      const updatedItem = await response.json();
+        }
+      );
+      
       onUpdate(updatedItem);
       onOpenChange(false);
     } catch (error) {
       console.error("Failed to update item:", error);
     }
   };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] max-w-2xl">

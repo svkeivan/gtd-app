@@ -21,6 +21,7 @@ import {
 import { Filter, Search, SortAsc } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { NextActionCard } from "./next-action-card";
+import { updateItemsPriority } from "@/actions/items";
 
 interface NextActionListProps {
   initialNextActions: NextAction[];
@@ -92,16 +93,7 @@ export function NextActionsList({
 
     // Update priorities on the server
     try {
-      await fetch("/api/items/reorder", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          items: items.map((item, index) => ({ id: item.id, priority: index })),
-          userId,
-        }),
-      });
+      await updateItemsPriority(items.map((item, index) => ({ id: item.id, priority: index })));
     } catch (error) {
       console.error("Error updating priorities:", error);
     }
