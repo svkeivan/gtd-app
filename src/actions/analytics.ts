@@ -41,7 +41,7 @@ export async function getAnalyticsData(userId: string) {
   const taskCompletionData = Array.from({ length: 30 }, (_, i) => {
     const date = format(subDays(endDate, i), 'yyyy-MM-dd')
     const completedCount = taskCompletionTrend.find(
-      item => format(item.createdAt, 'yyyy-MM-dd') === date
+      (item: { createdAt: Date; _count: { id: number } }) => format(item.createdAt, 'yyyy-MM-dd') === date
     )?._count.id || 0
     return { date, completed: completedCount }
   }).reverse()
