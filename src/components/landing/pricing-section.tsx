@@ -17,13 +17,14 @@ const pricingTiers: PricingTier[] = [
   {
     name: "Free Trial",
     price: "$0",
-    description: "14 days of premium features",
+    description: "15 days of premium features",
     features: [
-      "Basic task management",
-      "3 projects",
-      "Basic analytics"
+      "All Professional features",
+      "Unlimited projects during trial",
+      "Full analytics",
+      "Priority support"
     ],
-    buttonText: "Start Free Trial",
+    buttonText: "Start 15-Day Trial",
     buttonVariant: "default" as const
   },
   {
@@ -31,9 +32,10 @@ const pricingTiers: PricingTier[] = [
     price: "$9",
     description: "per month",
     features: [
-      "Unlimited tasks",
-      "10 projects",
-      "Full analytics"
+      "Up to 10 projects",
+      "Full analytics",
+      "Priority support",
+      "Unlimited tasks"
     ],
     buttonText: "Choose Personal",
     buttonVariant: "default" as const
@@ -43,9 +45,10 @@ const pricingTiers: PricingTier[] = [
     price: "$19",
     description: "per month",
     features: [
-      "Everything in Personal",
       "Unlimited projects",
-      "Priority support"
+      "Advanced analytics",
+      "Priority support",
+      "Team collaboration features"
     ],
     buttonText: "Choose Professional",
     buttonVariant: "default" as const,
@@ -56,9 +59,10 @@ const pricingTiers: PricingTier[] = [
     price: "Custom",
     description: "For large teams",
     features: [
-      "Everything in Professional",
-      "Custom integration",
-      "Dedicated support"
+      "Custom project limits",
+      "Dedicated support",
+      "Custom integrations",
+      "SLA guarantees"
     ],
     buttonText: "Contact Sales",
     buttonVariant: "outline" as const
@@ -69,22 +73,35 @@ export function PricingSection() {
   return (
     <section className="py-24 bg-background">
       <div className="container mx-auto px-4">
-        <h2 className="text-3xl font-bold text-center mb-16">Simple, Transparent Pricing</h2>
+        <h2 className="text-3xl font-bold text-center mb-4">Simple, Transparent Pricing</h2>
+        <p className="text-center text-muted-foreground mb-16">Start with a 15-day free trial. No credit card required.</p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {pricingTiers.map((tier, index) => (
             <Card key={index} className={`p-6 relative ${tier.popular ? "border-primary" : ""}`}>
               {tier.popular && (
-                <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">Popular</Badge>
+                <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">Most Popular</Badge>
               )}
               <div className="mb-8">
                 <h3 className="text-xl font-semibold mb-2">{tier.name}</h3>
                 <div className="text-3xl font-bold mb-2">{tier.price}</div>
                 <p className="text-muted-foreground">{tier.description}</p>
               </div>
-              <ul className="space-y-2 mb-8">
+              <ul className="space-y-3 mb-8">
                 {tier.features.map((feature, featureIndex) => (
                   <li key={featureIndex} className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                    <svg
+                      className="w-5 h-5 text-primary"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
                     <span>{feature}</span>
                   </li>
                 ))}

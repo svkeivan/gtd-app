@@ -20,6 +20,7 @@ model User {
   theme           String                @default("light")
   avatar          String?
   profileComplete Boolean               @default(false)
+  maxProjects     Int                   @default(3) // Default limit for free tier
   items           Item[]
   projects        Project[]
   contexts        Context[]
@@ -29,13 +30,49 @@ model User {
   comments        TaskComment[]
   notifications   CommentNotification[]
   auditLogs       AuditLog[]
+  subscription    Subscription?
   createdAt       DateTime              @default(now())
   updatedAt       DateTime              @updatedAt
+}
+
+enum SubscriptionPlan {
+  FREE
+  PERSONAL
+  PROFESSIONAL
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  CANCELED
+  PAST_DUE
+  UNPAID
+}
+
+model Subscription {
+  id                  String            @id @default(cuid())
+  userId              String            @unique
+  user                User              @relation(fields: [userId], references: [id])
+  plan                SubscriptionPlan  @default(FREE)
+  status              SubscriptionStatus @default(TRIALING)
+  trialEndsAt         DateTime?
+  currentPeriodStart  DateTime
+  currentPeriodEnd    DateTime
+  cancelAtPeriodEnd   Boolean          @default(false)
+  stripeCustomerId    String?          @unique
+  stripeSubscriptionId String?         @unique
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
 }
 
 enum AuditAction {
   PROFILE_UPDATE
   PROFILE_VIEW
+  SUBSCRIPTION_UPDATED
+  SUBSCRIPTION_CANCELED
+  TRIAL_STARTED
+  TRIAL_ENDED
 }
 
 model AuditLog {
