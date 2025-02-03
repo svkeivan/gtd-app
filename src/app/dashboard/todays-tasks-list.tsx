@@ -25,32 +25,48 @@ export function TodaysTasksList({ tasks }: TodaysTasksListProps) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Today&apos;s Tasks</CardTitle>
+    <Card className="sm:hover:shadow-md transition-shadow duration-200">
+      <CardHeader className="space-y-1.5 pb-4">
+        <CardTitle className="text-lg sm:text-xl">Today&apos;s Tasks</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {tasks.map((task) => (
             <div
               key={task.id}
-              className="flex items-start justify-between space-x-4 rounded-lg border p-4"
+              className="flex items-start justify-between gap-4 rounded-lg border p-3 sm:p-4 hover:bg-accent/50 transition-colors duration-200"
             >
-              <div className="space-y-1">
-                <p className="font-medium">{task.title}</p>
-                <div className="flex flex-wrap gap-2">
+              <div className="space-y-1 sm:space-y-2 min-w-0">
+                <p className="font-medium text-sm sm:text-base line-clamp-2">
+                  {task.title}
+                </p>
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
                   {task.project && (
-                    <Badge variant="secondary">{task.project.title}</Badge>
+                    <Badge 
+                      variant="secondary" 
+                      className="text-xs sm:text-sm"
+                    >
+                      {task.project.title}
+                    </Badge>
                   )}
                   {task.contexts.map((context) => (
-                    <Badge key={context.id} variant="outline">
+                    <Badge 
+                      key={context.id} 
+                      variant="outline"
+                      className="text-xs sm:text-sm"
+                    >
                       {context.name}
                     </Badge>
                   ))}
                 </div>
               </div>
               {task.priority > 0 && (
-                <Badge variant="destructive">P{task.priority}</Badge>
+                <Badge 
+                  variant="destructive"
+                  className="shrink-0 text-xs sm:text-sm"
+                >
+                  P{task.priority}
+                </Badge>
               )}
             </div>
           ))}

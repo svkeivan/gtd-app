@@ -35,28 +35,33 @@ export function QuickAddForm() {
       setIsLoading(false)
     }
   }
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Quick Add</CardTitle>
+    <Card className="sm:hover:shadow-md transition-shadow duration-200">
+      <CardHeader className="space-y-1.5 pb-4">
+        <CardTitle className="text-lg sm:text-xl">Quick Add</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-2">
-          <div className="flex space-x-2">
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
             <Input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Add a new task..."
-              className="flex-grow"
+              className="flex-grow min-w-0"
               disabled={isLoading}
             />
-            <Button type="submit" disabled={isLoading}>
+            <Button 
+              type="submit" 
+              disabled={isLoading}
+              className="sm:w-24"
+            >
               {isLoading ? 'Adding...' : 'Add'}
             </Button>
           </div>
           {error && (
-            <p className="text-sm text-red-500">{error}</p>
+            <p className="text-xs sm:text-sm text-destructive">{error}</p>
           )}
         </form>
       </CardContent>

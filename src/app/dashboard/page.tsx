@@ -89,28 +89,28 @@ export default async function DashboardPage() {
     getProgressStats(dashboardData);
 
   return (
-    <div className="container mx-auto space-y-6 p-4">
-      <div className="flex flex-col space-y-2">
-        <h1 className="text-3xl font-bold">
+    <div className="mx-auto max-w-7xl space-y-4 px-4 sm:space-y-6 sm:px-6 lg:px-8">
+      <div className="flex flex-col space-y-1 sm:space-y-2">
+        <h1 className="text-2xl font-bold sm:text-3xl">
           {getGreeting()}, {user.name}
         </h1>
-        <p className="text-muted-foreground">
+        <p className="text-sm text-muted-foreground sm:text-base">
           Here&apos;s your productivity overview for today
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-7">
-        <div className="space-y-6 md:col-span-4">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-7">
+        <div className="space-y-4 sm:space-y-6 lg:col-span-4">
           <QuickAddForm />
 
           <Card>
-            <CardHeader>
-              <CardTitle>Today&apos;s Progress</CardTitle>
+            <CardHeader className="space-y-1.5 pb-4">
+              <CardTitle className="text-lg sm:text-xl">Today&apos;s Progress</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <Progress value={progressPercent} className="h-2" />
-                <div className="flex justify-between text-sm">
+              <div className="space-y-3 sm:space-y-4">
+                <Progress value={progressPercent} className="h-2 sm:h-3" />
+                <div className="flex justify-between text-xs sm:text-sm">
                   <span>
                     {completedTasks} of {totalTasks} tasks completed
                   </span>
@@ -124,7 +124,7 @@ export default async function DashboardPage() {
           <TodaysTasksList tasks={dashboardData.todaysTasks} />
         </div>
 
-        <div className="md:col-span-3">
+        <div className="lg:col-span-3">
           <RecentItemsList items={dashboardData.recentItems} />
         </div>
       </div>
