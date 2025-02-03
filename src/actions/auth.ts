@@ -7,7 +7,6 @@ import { redirect } from "next/navigation";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { IronSessionData } from "iron-session";
-import { SubscriptionService } from "@/lib/subscription";
 
 const prisma = new PrismaClient();
 
@@ -106,9 +105,17 @@ export async function register(email: string, password: string) {
     // Save session
     await session.save();
 
+    // Return user data with subscription
     return {
       id: user.id,
-      email: user.email
+      email: user.email,
+      subscription: {
+        plan: 'PROFESSIONAL',
+        status: 'ACTIVE',
+        trialEndsAt: null,
+        currentPeriodEnd: new Date('2099-12-31'),
+        cancelAtPeriodEnd: false
+      }
     };
   } catch (error) {
     throw error;

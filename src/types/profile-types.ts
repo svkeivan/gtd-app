@@ -6,6 +6,12 @@ export const subscriptionSchema = z.object({
   trialEndsAt: z.date().nullable(),
   currentPeriodEnd: z.date(),
   cancelAtPeriodEnd: z.boolean(),
+  features: z.object({
+    projects: z.string(),
+    analytics: z.string(),
+    support: z.string(),
+    teamFeatures: z.string()
+  }).optional()
 });
 
 export const profileSchema = z.object({

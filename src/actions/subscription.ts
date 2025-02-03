@@ -19,18 +19,23 @@ export const getSubscription = createSafeAction(getSubscriptionSchema, async ({
       include: { subscription: true }
     });
 
-    // Return full access subscription info
+    // Return full access subscription info with all required fields
+    const subscriptionData = {
+      plan: "PROFESSIONAL" as const,
+      status: "ACTIVE" as const,
+      trialEndsAt: null,
+      currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+      cancelAtPeriodEnd: false,
+      features: {
+        projects: 'Unlimited projects',
+        analytics: 'Advanced',
+        support: 'Priority',
+        teamFeatures: 'Included'
+      }
+    };
+
     return {
-      data: {
-        plan: 'PROFESSIONAL',
-        status: 'ACTIVE',
-        features: {
-          projects: 'Unlimited projects',
-          analytics: 'Advanced',
-          support: 'Priority',
-          teamFeatures: 'Included'
-        }
-      },
+      data: subscriptionData,
       error: null
     };
   } catch (error) {

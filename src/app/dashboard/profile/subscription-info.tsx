@@ -5,8 +5,33 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { getSubscription } from "@/actions/subscription"
 
+import { SubscriptionData } from "@/types/profile-types"
+
+const DEFAULT_FEATURES = {
+  projects: 'No projects',
+  analytics: 'Not available',
+  support: 'Not available',
+  teamFeatures: 'Not available'
+} as const;
+
+// Extended type for client-side subscription data that always includes features
+interface ClientSubscriptionData extends Omit<SubscriptionData, 'features'> {
+  features: {
+    projects: string;
+    analytics: string;
+    support: string;
+    teamFeatures: string;
+  }
+}
+
+const toClientSubscription = (data: SubscriptionData): ClientSubscriptionData => ({
+  ...data,
+  features: data.features ?? DEFAULT_FEATURES
+});
+
 interface SubscriptionInfoProps {
   userId: string;
+  initialSubscription?: SubscriptionData | null;
 }
 
 function FeatureItem({ feature, value }: { feature: string, value: string }) {
@@ -18,9 +43,11 @@ function FeatureItem({ feature, value }: { feature: string, value: string }) {
   )
 }
 
-export function SubscriptionInfo({ userId }: SubscriptionInfoProps) {
-  const [subscription, setSubscription] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+export function SubscriptionInfo({ userId, initialSubscription }: SubscriptionInfoProps) {
+  const [subscription, setSubscription] = useState<ClientSubscriptionData | null>(() =>
+    initialSubscription ? toClientSubscription(initialSubscription) : null
+  );
+  const [loading, setLoading] = useState(!initialSubscription)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -30,7 +57,9 @@ export function SubscriptionInfo({ userId }: SubscriptionInfoProps) {
         if (result.error) {
           throw new Error(result.error)
         }
-        setSubscription(result.data)
+        if (result.data) {
+          setSubscription(toClientSubscription(result.data))
+        }
       } catch (err) {
         setError('Failed to load subscription information')
         console.error(err)
