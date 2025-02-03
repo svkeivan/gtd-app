@@ -76,22 +76,20 @@ export async function register(email: string, password: string) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create new user with transaction to ensure both user and subscription are created
-    const { user, subscription } = await prisma.$transaction(async (tx) => {
-      const newUser = await tx.user.create({
-        data: {
-          email,
-          password: hashedPassword,
-        },
-      });
-
-      // Create trial subscription
-      const newSubscription = await SubscriptionService.createTrialSubscription(newUser.id);
-
-      return { 
-        user: newUser, 
-        subscription: newSubscription 
-      };
+    // Create new user
+    const user = await prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        subscription: {
+          create: {
+            plan: 'PROFESSIONAL',
+            status: 'ACTIVE',
+            currentPeriodStart: new Date(),
+            currentPeriodEnd: new Date('2099-12-31'), // Far future date for unlimited access
+          }
+        }
+      }
     });
 
     // Create session
@@ -110,11 +108,7 @@ export async function register(email: string, password: string) {
 
     return {
       id: user.id,
-      email: user.email,
-      subscription: subscription ? {
-        plan: subscription.plan,
-        trialEndsAt: subscription.trialEndsAt,
-      } : null,
+      email: user.email
     };
   } catch (error) {
     throw error;
