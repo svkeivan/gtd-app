@@ -21,6 +21,14 @@ const SubscriptionStatus = {
 
 type SubscriptionStatusType = typeof SubscriptionStatus[keyof typeof SubscriptionStatus];
 
+type SubscriptionFeature = 
+  | "basic_analytics"
+  | "advanced_analytics"
+  | "priority_support"
+  | "team_collaboration"
+  | "custom_integrations"
+  | "sla_guarantee";
+
 export class SubscriptionService {
   static async createTrialSubscription(userId: string) {
     const trialEndDate = new Date();
@@ -46,11 +54,11 @@ export class SubscriptionService {
         }
       });
 
-      // Log trial start
+      // Log trial start with correct audit action
       await tx.auditLog.create({
         data: {
           userId,
-          action: 'PROFILE_UPDATE',
+          action: 'TRIAL_STARTED',
           details: "Trial subscription created with Professional features",
         }
       });
@@ -95,7 +103,7 @@ export class SubscriptionService {
       await tx.auditLog.create({
         data: {
           userId,
-          action: 'PROFILE_UPDATE',
+          action: 'SUBSCRIPTION_UPDATED',
           details: `Subscription updated to ${plan} plan`,
         }
       });
@@ -124,7 +132,7 @@ export class SubscriptionService {
       await tx.auditLog.create({
         data: {
           userId,
-          action: 'PROFILE_UPDATE',
+          action: 'SUBSCRIPTION_CANCELED',
           details: "Subscription canceled",
         }
       });
@@ -155,8 +163,9 @@ export class SubscriptionService {
       case SubscriptionPlan.PERSONAL:
         return 10;
       case SubscriptionPlan.PROFESSIONAL:
-      case SubscriptionPlan.ENTERPRISE:
         return Infinity;
+      case SubscriptionPlan.ENTERPRISE:
+        return Infinity; // Can be customized per enterprise client
       default:
         return 3;
     }
@@ -164,7 +173,7 @@ export class SubscriptionService {
 
   static async isFeatureAvailable(
     userId: string,
-    feature: "analytics" | "priority_support" | "team_collaboration"
+    feature: SubscriptionFeature
   ): Promise<boolean> {
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -176,19 +185,32 @@ export class SubscriptionService {
     const subscription = user?.subscription;
     if (!subscription) return false;
 
-    // During trial, give access to all features
+    // During trial, give access to professional features
     if (subscription.status === SubscriptionStatus.TRIALING) {
-      return true;
+      return feature !== "custom_integrations" && feature !== "sla_guarantee";
+    }
+
+    // Handle inactive subscriptions
+    if (subscription.status === SubscriptionStatus.CANCELED ||
+        subscription.status === SubscriptionStatus.PAST_DUE ||
+        subscription.status === SubscriptionStatus.UNPAID) {
+      return false;
     }
 
     switch (feature) {
-      case "analytics":
+      case "basic_analytics":
         return subscription.plan !== SubscriptionPlan.FREE;
+      case "advanced_analytics":
+        return subscription.plan === SubscriptionPlan.PROFESSIONAL ||
+               subscription.plan === SubscriptionPlan.ENTERPRISE;
       case "priority_support":
         return subscription.plan !== SubscriptionPlan.FREE;
       case "team_collaboration":
         return subscription.plan === SubscriptionPlan.PROFESSIONAL || 
                subscription.plan === SubscriptionPlan.ENTERPRISE;
+      case "custom_integrations":
+      case "sla_guarantee":
+        return subscription.plan === SubscriptionPlan.ENTERPRISE;
       default:
         return false;
     }
@@ -223,7 +245,7 @@ export class SubscriptionService {
         await tx.auditLog.create({
           data: {
             userId,
-            action: 'PROFILE_UPDATE',
+            action: 'TRIAL_ENDED',
             details: "Trial period expired, account converted to free plan",
           }
         });

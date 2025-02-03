@@ -23,6 +23,18 @@ export async function getProfile() {
       timezone: true,
       avatar: true,
       profileComplete: true,
+      subscription: {
+        select: {
+          plan: true,
+          status: true,
+          trialEndsAt: true,
+          currentPeriodStart: true,
+          currentPeriodEnd: true,
+          cancelAtPeriodEnd: true,
+          stripeCustomerId: true,
+          stripeSubscriptionId: true,
+        }
+      }
     },
   });
 
@@ -93,4 +105,90 @@ export async function updateProfile(data: ProfileFormData) {
     avatar: updatedUser.avatar,
     profileComplete: updatedUser.profileComplete,
   };
+}
+
+export async function getSubscriptionDetails() {
+  const { user: authUser } = await auth();
+
+  if (!authUser?.id) {
+    throw new Error("Unauthorized");
+  }
+
+  const subscription = await prisma.subscription.findUnique({
+    where: { userId: authUser.id },
+    select: {
+      plan: true,
+      status: true,
+      trialEndsAt: true,
+      currentPeriodStart: true,
+      currentPeriodEnd: true,
+      cancelAtPeriodEnd: true,
+      stripeCustomerId: true,
+      stripeSubscriptionId: true,
+    },
+  });
+
+  return subscription;
+}
+
+export async function cancelSubscription() {
+  const { user: authUser } = await auth();
+
+  if (!authUser?.id) {
+    throw new Error("Unauthorized");
+  }
+
+  const subscription = await prisma.$transaction(async (tx) => {
+    const updated = await tx.subscription.update({
+      where: { userId: authUser.id },
+      data: {
+        cancelAtPeriodEnd: true,
+      },
+    });
+
+    await tx.auditLog.create({
+      data: {
+        userId: authUser.id,
+        action: "SUBSCRIPTION_CANCELED",
+        details: "Subscription scheduled for cancellation at period end",
+      },
+    });
+
+    return updated;
+  });
+
+  revalidatePath("/dashboard/profile");
+
+  return subscription;
+}
+
+export async function reactivateSubscription() {
+  const { user: authUser } = await auth();
+
+  if (!authUser?.id) {
+    throw new Error("Unauthorized");
+  }
+
+  const subscription = await prisma.$transaction(async (tx) => {
+    const updated = await tx.subscription.update({
+      where: { userId: authUser.id },
+      data: {
+        cancelAtPeriodEnd: false,
+      },
+    });
+
+    await tx.auditLog.create({
+      data: {
+        userId: authUser.id,
+        action: "SUBSCRIPTION_UPDATED",
+        details: "Subscription reactivated",
+      },
+    });
+
+    return updated;
+  });
+
+  revalidatePath("/dashboard/profile");
+
+  return subscription;
 }

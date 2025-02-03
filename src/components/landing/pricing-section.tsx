@@ -17,12 +17,13 @@ const pricingTiers: PricingTier[] = [
   {
     name: "Free Trial",
     price: "$0",
-    description: "15 days of premium features",
+    description: "15 days of Professional features",
     features: [
-      "All Professional features",
       "Unlimited projects during trial",
-      "Full analytics",
-      "Priority support"
+      "Advanced analytics dashboard",
+      "Priority email support",
+      "Team collaboration tools",
+      "Converts to Free plan after trial"
     ],
     buttonText: "Start 15-Day Trial",
     buttonVariant: "default" as const
@@ -33,9 +34,11 @@ const pricingTiers: PricingTier[] = [
     description: "per month",
     features: [
       "Up to 10 projects",
-      "Full analytics",
-      "Priority support",
-      "Unlimited tasks"
+      "Basic analytics dashboard",
+      "Priority email support",
+      "Unlimited tasks and contexts",
+      "Project time tracking",
+      "Custom tags and filters"
     ],
     buttonText: "Choose Personal",
     buttonVariant: "default" as const
@@ -46,9 +49,12 @@ const pricingTiers: PricingTier[] = [
     description: "per month",
     features: [
       "Unlimited projects",
-      "Advanced analytics",
-      "Priority support",
-      "Team collaboration features"
+      "Advanced analytics & reporting",
+      "Priority support with SLA",
+      "Team collaboration features",
+      "Project dependencies",
+      "Advanced time tracking",
+      "Custom dashboards"
     ],
     buttonText: "Choose Professional",
     buttonVariant: "default" as const,
@@ -60,9 +66,12 @@ const pricingTiers: PricingTier[] = [
     description: "For large teams",
     features: [
       "Custom project limits",
-      "Dedicated support",
+      "Dedicated support manager",
       "Custom integrations",
-      "SLA guarantees"
+      "SLA guarantees",
+      "Advanced security features",
+      "User role management",
+      "Training & onboarding"
     ],
     buttonText: "Contact Sales",
     buttonVariant: "outline" as const
@@ -74,7 +83,9 @@ export function PricingSection() {
     <section className="py-24 bg-background">
       <div className="container mx-auto px-4">
         <h2 className="text-3xl font-bold text-center mb-4">Simple, Transparent Pricing</h2>
-        <p className="text-center text-muted-foreground mb-16">Start with a 15-day free trial. No credit card required.</p>
+        <p className="text-center text-muted-foreground mb-16">
+          Start with a 15-day free trial of our Professional plan. No credit card required.
+        </p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {pricingTiers.map((tier, index) => (
             <Card key={index} className={`p-6 relative ${tier.popular ? "border-primary" : ""}`}>
@@ -118,6 +129,9 @@ export function PricingSection() {
             </Card>
           ))}
         </div>
+        <p className="text-center text-sm text-muted-foreground mt-8">
+          All plans include: SSL security, automatic backups, and regular updates.
+        </p>
       </div>
     </section>
   );
