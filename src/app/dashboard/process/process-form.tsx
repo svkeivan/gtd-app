@@ -70,7 +70,6 @@ export function ProcessForm({
   const [showComments, setShowComments] = useState(false);
   const [progress, setProgress] = useState(0);
   const router = useRouter();
-  const { removeItem } = useAppStore();
 
   const currentProject = projects.find((p) => p.id === item.projectId);
 
@@ -138,7 +137,7 @@ export function ProcessForm({
         estimated: estimate ? parseInt(estimate) : undefined,
         dueDate,
       });
-      router.refresh();
+      router.push('/dashboard/process');
     } catch (err) {
       setError(
         `Failed to process item: ${err instanceof Error ? err.message : "Please try again"}`,
