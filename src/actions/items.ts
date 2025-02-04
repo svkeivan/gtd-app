@@ -52,7 +52,7 @@ export async function getInboxItems(userId: string) {
 export async function addComment(
   itemId: string,
   content: string,
-  type: CommentType = CommentType.COMMENT
+  type: CommentType = CommentType.COMMENT,
 ) {
   const { user } = await auth();
   if (!user) {
@@ -154,20 +154,20 @@ export async function processItem(
     await addComment(
       itemId,
       `Status changed from ${currentItem.status} to ${data.status}`,
-      CommentType.STATUS_CHANGE
+      CommentType.STATUS_CHANGE,
     );
   }
 
   // Add system comment for project change
   if (currentItem.projectId !== data.projectId) {
-    const newProject = data.projectId 
+    const newProject = data.projectId
       ? await prisma.project.findUnique({ where: { id: data.projectId } })
       : null;
-    
+
     await addComment(
       itemId,
-      `Project ${currentItem.projectId ? 'changed from ' + currentItem.project?.title : 'set to'} ${newProject?.title || 'none'}`,
-      CommentType.STATUS_CHANGE
+      `Project ${currentItem.projectId ? "changed from " + currentItem.project?.title : "set to"} ${newProject?.title || "none"}`,
+      CommentType.STATUS_CHANGE,
     );
   }
 
@@ -206,7 +206,7 @@ export async function getNextActionsWithDetails(userId: string) {
   const nextActions = await prisma.item.findMany({
     where: {
       userId: userId,
-      status: { not: "COMPLETED" },
+      status: "NEXT_ACTION",
     },
     include: {
       project: true,
@@ -309,7 +309,7 @@ export async function updateItem(
     await addComment(
       id,
       `Status changed from ${currentItem.status} to ${data.status}`,
-      CommentType.STATUS_CHANGE
+      CommentType.STATUS_CHANGE,
     );
   }
 
@@ -317,15 +317,18 @@ export async function updateItem(
     await addComment(
       id,
       `Priority changed from ${currentItem.priority} to ${data.priority}`,
-      CommentType.PRIORITY_CHANGE
+      CommentType.PRIORITY_CHANGE,
     );
   }
 
-  if (data.estimated !== undefined && currentItem.estimated !== data.estimated) {
+  if (
+    data.estimated !== undefined &&
+    currentItem.estimated !== data.estimated
+  ) {
     await addComment(
       id,
       `Estimate changed from ${currentItem.estimated || 0} to ${data.estimated} minutes`,
-      CommentType.ESTIMATE_CHANGE
+      CommentType.ESTIMATE_CHANGE,
     );
   }
 
@@ -343,7 +346,7 @@ export async function addDependency(itemId: string, blockerTaskId: string) {
   await addComment(
     itemId,
     `Added dependency on task ${blockerTaskId}`,
-    CommentType.DEPENDENCY_ADDED
+    CommentType.DEPENDENCY_ADDED,
   );
 
   return dependency;
@@ -360,7 +363,7 @@ export async function removeDependency(itemId: string, blockerTaskId: string) {
   await addComment(
     itemId,
     `Removed dependency on task ${blockerTaskId}`,
-    CommentType.DEPENDENCY_REMOVED
+    CommentType.DEPENDENCY_REMOVED,
   );
 }
 
@@ -392,7 +395,7 @@ export async function updateItemPlanning(
   data: {
     plannedDate: Date;
     estimated: number;
-  }
+  },
 ) {
   const { user } = await auth();
   if (!user) {
@@ -407,11 +410,13 @@ export async function updateItemPlanning(
     },
   });
 
-  revalidatePath('/calendar');
+  revalidatePath("/calendar");
   return item;
 }
 
-export async function updateItemsPriority(items: { id: string; priority: number }[]) {
+export async function updateItemsPriority(
+  items: { id: string; priority: number }[],
+) {
   const { user } = await auth();
   if (!user) {
     throw new Error("User not found");
@@ -423,14 +428,14 @@ export async function updateItemsPriority(items: { id: string; priority: number 
         prisma.item.update({
           where: { id: item.id },
           data: { priority: item.priority },
-        })
-      )
+        }),
+      ),
     );
 
-    revalidatePath('/');
+    revalidatePath("/");
     return { success: true };
   } catch (error) {
-    console.error('Error reordering items:', error);
-    throw new Error('Failed to reorder items');
+    console.error("Error reordering items:", error);
+    throw new Error("Failed to reorder items");
   }
 }

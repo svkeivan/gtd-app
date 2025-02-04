@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { updateItemsPriority } from "@/actions/items";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -18,10 +18,9 @@ import {
   Droppable,
   DropResult,
 } from "@hello-pangea/dnd";
-import { Filter, Search, SortAsc } from "lucide-react";
+import { Search, SortAsc } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { NextActionCard } from "./next-action-card";
-import { updateItemsPriority } from "@/actions/items";
 
 interface NextActionListProps {
   initialNextActions: NextAction[];
@@ -42,7 +41,6 @@ export function NextActionsList({
   const [sortBy, setSortBy] = useState("priority");
   const [groupBy, setGroupBy] = useState("none");
   const [searchTerm, setSearchTerm] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     setNextActions(initialNextActions);
@@ -93,7 +91,9 @@ export function NextActionsList({
 
     // Update priorities on the server
     try {
-      await updateItemsPriority(items.map((item, index) => ({ id: item.id, priority: index })));
+      await updateItemsPriority(
+        items.map((item, index) => ({ id: item.id, priority: index })),
+      );
     } catch (error) {
       console.error("Error updating priorities:", error);
     }
@@ -182,7 +182,7 @@ export function NextActionsList({
 
   return (
     <div>
-      <div className="mb-6 rounded-lg border bg-gray-50/50 p-4 space-y-4">
+      <div className="mb-6 space-y-4 rounded-lg border  p-4">
         <div className="flex items-center justify-between">
           <div className="relative max-w-md flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
