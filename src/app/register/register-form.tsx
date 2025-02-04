@@ -19,6 +19,15 @@ function RegisterForm() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
+  // Password requirements state
+  const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
+  const passwordRequirements = [
+    { text: "At least 8 characters", met: password.length >= 8 },
+    { text: "At least one uppercase letter", met: /[A-Z]/.test(password) },
+    { text: "At least one lowercase letter", met: /[a-z]/.test(password) },
+    { text: "At least one number", met: /[0-9]/.test(password) },
+  ];
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -72,6 +81,7 @@ function RegisterForm() {
               required
               disabled={isLoading}
               placeholder="Enter your email"
+              className="w-full"
             />
           </div>
           <div className="space-y-2">
@@ -81,14 +91,35 @@ function RegisterForm() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              onFocus={() => setShowPasswordRequirements(true)}
               required
               disabled={isLoading}
               placeholder="Choose a password"
+              className="w-full"
             />
+            {showPasswordRequirements && (
+              <div className="mt-2 text-sm space-y-1">
+                <p className="font-medium text-gray-700">Password requirements:</p>
+                {passwordRequirements.map((req, index) => (
+                  <div key={index} className="flex items-center space-x-2">
+                    <span className={req.met ? "text-green-500" : "text-gray-400"}>
+                      {req.met ? "✓" : "○"}
+                    </span>
+                    <span className={req.met ? "text-green-700" : "text-gray-600"}>
+                      {req.text}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          <Button 
+            type="submit" 
+            className="w-full" 
+            disabled={isLoading || !passwordRequirements.every(req => req.met)}
+          >
             {isLoading ? "Creating Account..." : "Start Free Trial"}
           </Button>
           <p className="text-center text-sm text-muted-foreground">

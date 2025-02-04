@@ -20,22 +20,49 @@ declare module "iron-session" {
   }
 }
 
+// Validation functions
+function validateEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
+function validatePassword(password: string): { isValid: boolean; message: string } {
+  if (password.length < 8) {
+    return { isValid: false, message: "Password must be at least 8 characters long" };
+  }
+  if (!/[A-Z]/.test(password)) {
+    return { isValid: false, message: "Password must contain at least one uppercase letter" };
+  }
+  if (!/[a-z]/.test(password)) {
+    return { isValid: false, message: "Password must contain at least one lowercase letter" };
+  }
+  if (!/[0-9]/.test(password)) {
+    return { isValid: false, message: "Password must contain at least one number" };
+  }
+  return { isValid: true, message: "" };
+}
+
 export async function login(email: string, password: string) {
   try {
+    // Validate email
+    if (!validateEmail(email)) {
+      throw new Error("Please enter a valid email address");
+    }
+
     // Find user
     const user = await prisma.user.findUnique({
       where: { email },
     });
 
     if (!user) {
-      throw new Error("Invalid credentials");
+      throw new Error("The email or password you entered is incorrect");
     }
 
     // Verify password
     const isValid = await bcrypt.compare(password, user.password!);
 
     if (!isValid) {
-      throw new Error("Invalid credentials");
+      throw new Error("The email or password you entered is incorrect");
     }
 
     // Create session
@@ -57,19 +84,33 @@ export async function login(email: string, password: string) {
       email: user.email,
     };
   } catch (error) {
-    throw error;
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error("An unexpected error occurred. Please try again later.");
   }
 }
 
 export async function register(email: string, password: string) {
   try {
+    // Validate email
+    if (!validateEmail(email)) {
+      throw new Error("Please enter a valid email address");
+    }
+
+    // Validate password
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      throw new Error(passwordValidation.message);
+    }
+
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
 
     if (existingUser) {
-      throw new Error("User already exists");
+      throw new Error("An account with this email already exists");
     }
 
     // Hash password
@@ -118,7 +159,10 @@ export async function register(email: string, password: string) {
       }
     };
   } catch (error) {
-    throw error;
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error("An unexpected error occurred. Please try again later.");
   }
 }
 

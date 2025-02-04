@@ -27,7 +27,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useAppStore } from "@/lib/store";
 import { Context, Item, ItemStatus, Project } from "@prisma/client";
 import { format } from "date-fns";
 import {
@@ -137,7 +136,14 @@ export function ProcessForm({
         estimated: estimate ? parseInt(estimate) : undefined,
         dueDate,
       });
-      router.push('/dashboard/process');
+      // Clear form
+      setStatus("INBOX");
+      setProjectId("");
+      setContextId("");
+      setDescription("");
+      setEstimate("");
+      setDueDate(undefined);
+      router.push("/dashboard/process");
     } catch (err) {
       setError(
         `Failed to process item: ${err instanceof Error ? err.message : "Please try again"}`,
