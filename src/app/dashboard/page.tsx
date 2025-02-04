@@ -121,10 +121,10 @@ export default async function DashboardPage() {
           </Card>
 
           <DashboardSummary data={dashboardData} />
-          <TodaysTasksList tasks={dashboardData.todaysTasks} />
         </div>
 
         <div className="lg:col-span-3">
+          <TodaysTasksList tasks={dashboardData.todaysTasks} />
           <RecentItemsList items={dashboardData.recentItems} />
         </div>
       </div>
