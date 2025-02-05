@@ -32,6 +32,7 @@ export async function createItem(data: {
   }
   return item;
 }
+
 export async function getInboxItems(userId: string) {
   const items = await prisma.item.findMany({
     where: {
@@ -185,6 +186,19 @@ export async function getNextActions(userId: string) {
     include: {
       project: true,
       contexts: true,
+      subtasks: {
+        include: {
+          task: true,
+        },
+        orderBy: {
+          order: "asc",
+        },
+      },
+      checklistItems: {
+        orderBy: {
+          order: "asc",
+        },
+      },
     },
     orderBy: {
       createdAt: "desc",
@@ -211,6 +225,19 @@ export async function getNextActionsWithDetails(userId: string) {
     include: {
       project: true,
       contexts: true,
+      subtasks: {
+        include: {
+          task: true,
+        },
+        orderBy: {
+          order: "asc",
+        },
+      },
+      checklistItems: {
+        orderBy: {
+          order: "asc",
+        },
+      },
     },
     orderBy: {
       createdAt: "desc",
@@ -247,6 +274,19 @@ export async function getItemToProcess(idOrUserId: string) {
     },
     include: {
       contexts: true,
+      subtasks: {
+        include: {
+          task: true,
+        },
+        orderBy: {
+          order: "asc",
+        },
+      },
+      checklistItems: {
+        orderBy: {
+          order: "asc",
+        },
+      },
     },
   });
   return item;
@@ -257,8 +297,147 @@ export async function getItemOfProjects(id: string) {
     where: {
       projectId: id,
     },
+    include: {
+      subtasks: {
+        include: {
+          task: true,
+        },
+        orderBy: {
+          order: "asc",
+        },
+      },
+      checklistItems: {
+        orderBy: {
+          order: "asc",
+        },
+      },
+    },
   });
   return item;
+}
+
+// Subtask Management
+export async function addSubtask(parentId: string, data: { title: string; notes?: string }) {
+  const { user } = await auth();
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  // Create the subtask as a regular item first
+  const subtaskItem = await prisma.item.create({
+    data: {
+      title: data.title,
+      notes: data.notes,
+      status: "NEXT_ACTION",
+      userId: user.id,
+    },
+  });
+
+  // Create the subtask relationship
+  const subtask = await prisma.subtask.create({
+    data: {
+      parentId,
+      taskId: subtaskItem.id,
+      order: await getNextSubtaskOrder(parentId),
+    },
+  });
+
+  revalidatePath("/next-actions");
+  return subtask;
+}
+
+export async function removeSubtask(parentId: string, subtaskId: string) {
+  await prisma.subtask.delete({
+    where: {
+      taskId: subtaskId,
+    },
+  });
+
+  // Delete the actual item
+  await prisma.item.delete({
+    where: {
+      id: subtaskId,
+    },
+  });
+
+  revalidatePath("/next-actions");
+}
+
+export async function reorderSubtasks(parentId: string, subtaskIds: string[]) {
+  await prisma.$transaction(
+    subtaskIds.map((id, index) =>
+      prisma.subtask.update({
+        where: { taskId: id },
+        data: { order: index },
+      })
+    )
+  );
+
+  revalidatePath("/next-actions");
+}
+
+async function getNextSubtaskOrder(parentId: string): Promise<number> {
+  const lastSubtask = await prisma.subtask.findFirst({
+    where: { parentId },
+    orderBy: { order: "desc" },
+  });
+  return (lastSubtask?.order ?? -1) + 1;
+}
+
+// Checklist Management
+export async function addChecklistItem(itemId: string, title: string) {
+  const checklistItem = await prisma.checklistItem.create({
+    data: {
+      title,
+      itemId,
+      order: await getNextChecklistItemOrder(itemId),
+    },
+  });
+
+  revalidatePath("/next-actions");
+  return checklistItem;
+}
+
+export async function updateChecklistItem(
+  id: string,
+  data: { title?: string; completed?: boolean }
+) {
+  const checklistItem = await prisma.checklistItem.update({
+    where: { id },
+    data,
+  });
+
+  revalidatePath("/next-actions");
+  return checklistItem;
+}
+
+export async function removeChecklistItem(id: string) {
+  await prisma.checklistItem.delete({
+    where: { id },
+  });
+
+  revalidatePath("/next-actions");
+}
+
+export async function reorderChecklistItems(itemId: string, checklistItemIds: string[]) {
+  await prisma.$transaction(
+    checklistItemIds.map((id, index) =>
+      prisma.checklistItem.update({
+        where: { id },
+        data: { order: index },
+      })
+    )
+  );
+
+  revalidatePath("/next-actions");
+}
+
+async function getNextChecklistItemOrder(itemId: string): Promise<number> {
+  const lastItem = await prisma.checklistItem.findFirst({
+    where: { itemId },
+    orderBy: { order: "desc" },
+  });
+  return (lastItem?.order ?? -1) + 1;
 }
 
 export async function updateItem(
@@ -301,6 +480,19 @@ export async function updateItem(
     },
     include: {
       contexts: true,
+      subtasks: {
+        include: {
+          task: true,
+        },
+        orderBy: {
+          order: "asc",
+        },
+      },
+      checklistItems: {
+        orderBy: {
+          order: "asc",
+        },
+      },
     },
   });
 
@@ -384,6 +576,19 @@ export async function getNextItems() {
       status: true,
       plannedDate: true,
       estimated: true,
+      subtasks: {
+        include: {
+          task: true,
+        },
+        orderBy: {
+          order: "asc",
+        },
+      },
+      checklistItems: {
+        orderBy: {
+          order: "asc",
+        },
+      },
     },
   });
 

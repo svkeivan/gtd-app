@@ -97,26 +97,51 @@ enum ItemStatus {
 }
 
 model Item {
-  id          String           @id @default(cuid())
-  title       String
-  notes       String?
-  status      ItemStatus       @default(INBOX)
-  priority    Int              @default(0)
-  dueDate     DateTime?
-  plannedDate DateTime?
-  estimated   Int?             @db.Integer // Store in minutes
-  contexts    Context[]
-  project     Project?         @relation(fields: [projectId], references: [id])
-  projectId   String?
-  user        User             @relation(fields: [userId], references: [id])
-  userId      String
-  tags        Tag[]
-  TimeEntry   TimeEntry[]
-  comments    TaskComment[]
-  dependsOn   TaskDependency[] @relation("DependentTask")
-  blocks      TaskDependency[] @relation("BlockerTask")
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  id            String           @id @default(cuid())
+  title         String
+  notes         String?
+  status        ItemStatus       @default(INBOX)
+  priority      Int              @default(0)
+  dueDate       DateTime?
+  plannedDate   DateTime?
+  estimated     Int?             @db.Integer // Store in minutes
+  contexts      Context[]
+  project       Project?         @relation(fields: [projectId], references: [id])
+  projectId     String?
+  user          User             @relation(fields: [userId], references: [id])
+  userId        String
+  tags          Tag[]
+  TimeEntry     TimeEntry[]
+  comments      TaskComment[]
+  dependsOn     TaskDependency[] @relation("DependentTask")
+  blocks        TaskDependency[] @relation("BlockerTask")
+  subtasks      Subtask[]        @relation("ParentTask")
+  parentTask    Subtask?         @relation("SubTask")
+  checklistItems ChecklistItem[]
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+}
+
+model Subtask {
+  id           String   @id @default(cuid())
+  parentId     String
+  parentTask   Item     @relation("ParentTask", fields: [parentId], references: [id], onDelete: Cascade)
+  taskId       String   @unique
+  task         Item     @relation("SubTask", fields: [taskId], references: [id], onDelete: Cascade)
+  order        Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model ChecklistItem {
+  id        String   @id @default(cuid())
+  title     String
+  completed Boolean  @default(false)
+  order     Int      @default(0)
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  itemId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum CommentType {

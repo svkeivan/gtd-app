@@ -18,11 +18,32 @@ interface DashboardData {
   recentItems: Item[];
 }
 
+interface SubtaskWithTask {
+  id: string;
+  parentId: string;
+  taskId: string;
+  order: number;
+  task: Item;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface ChecklistItem {
+  id: string;
+  title: string;
+  completed: boolean;
+  order: number;
+  itemId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface NextAction extends Item {
   project?: Project | null;
   contexts?: Context[];
+  subtasks?: SubtaskWithTask[];
+  checklistItems?: ChecklistItem[];
 }
-
 
 interface AppState {
   items: Item[];

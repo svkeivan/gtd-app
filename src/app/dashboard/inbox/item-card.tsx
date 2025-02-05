@@ -3,15 +3,19 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { getPriorityColor } from "@/lib/utils";
-import { Item, Project, Tag } from "@prisma/client";
+import { Item, Project, Tag, Subtask, ChecklistItem } from "@prisma/client";
 import { differenceInDays, format } from "date-fns";
 import {
   ArrowRight,
   CalendarDays,
   CalendarIcon,
+  CheckSquare,
+  ChevronDown,
+  ChevronRight,
   CircleDot,
   Clock,
   Folder,
+  ListTodo,
   MoreHorizontal,
 } from "lucide-react";
 import Link from "next/link";
@@ -21,6 +25,8 @@ import { EditItemDialog } from "./edit-item-dialog";
 interface ItemWithProject extends Item {
   project?: Project;
   tags?: Tag[];
+  subtasks?: Array<Subtask & { task: Item }>;
+  checklistItems?: ChecklistItem[];
 }
 
 export function ItemCard({ item: initialItem }: { item: ItemWithProject }) {
@@ -106,6 +112,22 @@ export function ItemCard({ item: initialItem }: { item: ItemWithProject }) {
                   <Clock className="h-3 w-3" />
                   {estimated}h
                 </span>
+              )}
+            </div>
+
+            {/* Subtasks and Checklists Summary */}
+            <div className="flex flex-wrap gap-4">
+              {item.subtasks && item.subtasks.length > 0 && (
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <ListTodo className="h-3 w-3" />
+                  {item.subtasks.length} subtask{item.subtasks.length !== 1 ? 's' : ''}
+                </div>
+              )}
+              {item.checklistItems && item.checklistItems.length > 0 && (
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <CheckSquare className="h-3 w-3" />
+                  {item.checklistItems.filter(i => i.completed).length}/{item.checklistItems.length} completed
+                </div>
               )}
             </div>
 

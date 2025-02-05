@@ -1,6 +1,6 @@
 "use client";
 
-import { processItem } from "@/actions/items";
+import { addChecklistItem, addSubtask, processItem, removeChecklistItem, removeSubtask, updateChecklistItem } from "@/actions/items";
 import { CommentList } from "@/components/comments/comment-list";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -27,7 +27,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Context, Item, ItemStatus, Project } from "@prisma/client";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Context, Item, ItemStatus, Project, Subtask, ChecklistItem } from "@prisma/client";
 import { format } from "date-fns";
 import {
   CalendarIcon,
@@ -35,12 +36,15 @@ import {
   ChevronUp,
   Loader2,
   NotebookIcon,
+  Trash2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 interface ItemWithContext extends Item {
   contexts: Context[];
+  subtasks?: Array<Subtask & { task: Item }>;
+  checklistItems?: ChecklistItem[];
 }
 
 export function ProcessForm({
@@ -68,7 +72,62 @@ export function ProcessForm({
   const [error, setError] = useState("");
   const [showComments, setShowComments] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
+  const [newChecklistItem, setNewChecklistItem] = useState("");
   const router = useRouter();
+
+  const handleAddSubtask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSubtaskTitle.trim()) return;
+
+    try {
+      await addSubtask(item.id, { title: newSubtaskTitle });
+      setNewSubtaskTitle("");
+      router.refresh();
+    } catch (error) {
+      console.error("Failed to add subtask:", error);
+    }
+  };
+
+  const handleRemoveSubtask = async (subtaskId: string) => {
+    try {
+      await removeSubtask(item.id, subtaskId);
+      router.refresh();
+    } catch (error) {
+      console.error("Failed to remove subtask:", error);
+    }
+  };
+
+  const handleAddChecklistItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newChecklistItem.trim()) return;
+
+    try {
+      await addChecklistItem(item.id, newChecklistItem);
+      setNewChecklistItem("");
+      router.refresh();
+    } catch (error) {
+      console.error("Failed to add checklist item:", error);
+    }
+  };
+
+  const handleToggleChecklistItem = async (id: string, completed: boolean) => {
+    try {
+      await updateChecklistItem(id, { completed });
+      router.refresh();
+    } catch (error) {
+      console.error("Failed to update checklist item:", error);
+    }
+  };
+
+  const handleRemoveChecklistItem = async (id: string) => {
+    try {
+      await removeChecklistItem(id);
+      router.refresh();
+    } catch (error) {
+      console.error("Failed to remove checklist item:", error);
+    }
+  };
 
   const currentProject = projects.find((p) => p.id === item.projectId);
 
@@ -323,7 +382,78 @@ export function ProcessForm({
             </RadioGroup>
           </div>
           <div className="space-y-4 rounded-lg bg-muted/30 p-4">
-            <Label className="text-lg font-semibold">2. Add Details</Label>
+            <Label className="text-lg font-semibold">2. Add Details & Tasks</Label>
+            
+            {/* Subtasks Section */}
+            <div className="space-y-2">
+              <Label className="text-lg">Subtasks</Label>
+              {item.subtasks?.map((subtask) => (
+                <div key={subtask.taskId} className="flex items-center gap-2">
+                  <Input
+                    value={subtask.task.title}
+                    readOnly
+                    className="flex-1"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleRemoveSubtask(subtask.taskId)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              <form onSubmit={handleAddSubtask} className="flex gap-2">
+                <Input
+                  placeholder="Add a subtask..."
+                  value={newSubtaskTitle}
+                  onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                  className="flex-1"
+                />
+                <Button type="submit" variant="outline">
+                  Add
+                </Button>
+              </form>
+            </div>
+
+            {/* Checklist Section */}
+            <div className="space-y-2">
+              <Label className="text-lg">Checklist</Label>
+              {item.checklistItems?.map((item) => (
+                <div key={item.id} className="flex items-center gap-2">
+                  <Checkbox
+                    checked={item.completed}
+                    onCheckedChange={(checked) =>
+                      handleToggleChecklistItem(item.id, checked as boolean)
+                    }
+                  />
+                  <Input
+                    value={item.title}
+                    readOnly
+                    className="flex-1"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleRemoveChecklistItem(item.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              <form onSubmit={handleAddChecklistItem} className="flex gap-2">
+                <Input
+                  placeholder="Add a checklist item..."
+                  value={newChecklistItem}
+                  onChange={(e) => setNewChecklistItem(e.target.value)}
+                  className="flex-1"
+                />
+                <Button type="submit" variant="outline">
+                  Add
+                </Button>
+              </form>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="description" className="text-lg">
                 Description

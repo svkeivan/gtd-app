@@ -26,15 +26,18 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { Item, ItemStatus, Project, Tag } from "@prisma/client";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Item, ItemStatus, Project, Tag, Subtask, ChecklistItem } from "@prisma/client";
 import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { updateItem } from "@/actions/items";
+import { addChecklistItem, addSubtask, removeChecklistItem, removeSubtask, updateChecklistItem, updateItem } from "@/actions/items";
 
 interface ItemWithProject extends Item {
   project?: Project;
   tags?: Tag[];
+  subtasks?: Array<Subtask & { task: Item }>;
+  checklistItems?: ChecklistItem[];
 }
 
 interface EditItemDialogProps {
@@ -51,6 +54,66 @@ export function EditItemDialog({
   onUpdate,
 }: EditItemDialogProps) {
   const [item, setItem] = useState<ItemWithProject>(initialItem);
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
+  const [newChecklistItem, setNewChecklistItem] = useState("");
+
+  const handleAddSubtask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSubtaskTitle.trim()) return;
+
+    try {
+      await addSubtask(item.id, { title: newSubtaskTitle });
+      setNewSubtaskTitle("");
+      const updatedItem = await updateItem(item.id, { title: item.title }); // Refresh item data
+      onUpdate(updatedItem);
+    } catch (error) {
+      console.error("Failed to add subtask:", error);
+    }
+  };
+
+  const handleRemoveSubtask = async (subtaskId: string) => {
+    try {
+      await removeSubtask(item.id, subtaskId);
+      const updatedItem = await updateItem(item.id, { title: item.title }); // Refresh item data
+      onUpdate(updatedItem);
+    } catch (error) {
+      console.error("Failed to remove subtask:", error);
+    }
+  };
+
+  const handleAddChecklistItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newChecklistItem.trim()) return;
+
+    try {
+      await addChecklistItem(item.id, newChecklistItem);
+      setNewChecklistItem("");
+      const updatedItem = await updateItem(item.id, { title: item.title }); // Refresh item data
+      onUpdate(updatedItem);
+    } catch (error) {
+      console.error("Failed to add checklist item:", error);
+    }
+  };
+
+  const handleToggleChecklistItem = async (id: string, completed: boolean) => {
+    try {
+      await updateChecklistItem(id, { completed });
+      const updatedItem = await updateItem(item.id, { title: item.title }); // Refresh item data
+      onUpdate(updatedItem);
+    } catch (error) {
+      console.error("Failed to update checklist item:", error);
+    }
+  };
+
+  const handleRemoveChecklistItem = async (id: string) => {
+    try {
+      await removeChecklistItem(id);
+      const updatedItem = await updateItem(item.id, { title: item.title }); // Refresh item data
+      onUpdate(updatedItem);
+    } catch (error) {
+      console.error("Failed to remove checklist item:", error);
+    }
+  };
 
   const handleUpdate = async () => {
     try {
