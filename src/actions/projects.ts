@@ -1,14 +1,16 @@
 "use server";
 
+import { auth } from "@/lib/auth";
 import { PrismaClient } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 
 const prisma = new PrismaClient();
+export async function getProjects() {
+  const { user } = await auth();
 
-export async function getProjects(userId: string) {
   const projects = await prisma.project.findMany({
     where: {
-      userId: userId,
+      userId: user?.id,
     },
     include: {
       items: true,

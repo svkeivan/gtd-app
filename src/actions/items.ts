@@ -12,8 +12,8 @@ export async function createItem(data: {
   notes?: string;
   projectId?: string;
 }) {
-  const user = await auth();
-  if (!user.user) {
+  const { user } = await auth();
+  if (!user) {
     throw new Error("User not found");
   }
   const item = await prisma.item.create({
@@ -22,7 +22,7 @@ export async function createItem(data: {
       notes: data.notes,
       status: data.projectId ? "PROJECT" : "INBOX",
       projectId: data.projectId ?? null,
-      userId: user.user?.id,
+      userId: user.id,
     },
   });
   if (data.projectId) {
@@ -33,10 +33,14 @@ export async function createItem(data: {
   return item;
 }
 
-export async function getInboxItems(userId: string) {
+export async function getInboxItems() {
+  const { user } = await auth();
+  if (!user) {
+    throw new Error("User not found");
+  }
   const items = await prisma.item.findMany({
     where: {
-      userId: userId,
+      userId: user?.id,
     },
     include: {
       project: true,
@@ -59,7 +63,6 @@ export async function addComment(
   if (!user) {
     throw new Error("User not found");
   }
-
   const comment = await prisma.taskComment.create({
     data: {
       content,
@@ -177,10 +180,14 @@ export async function processItem(
   return item;
 }
 
-export async function getNextActions(userId: string) {
+export async function getNextActions() {
+  const { user } = await auth();
+  if (!user) {
+    throw new Error("User not found");
+  }
   const nextActions = await prisma.item.findMany({
     where: {
-      userId: userId,
+      userId: user.id,
       status: "NEXT_ACTION",
     },
     include: {
@@ -216,10 +223,14 @@ export async function updateItemStatus(itemId: string, status: ItemStatus) {
   return item;
 }
 
-export async function getNextActionsWithDetails(userId: string) {
+export async function getNextActionsWithDetails() {
+  const { user } = await auth();
+  if (!user) {
+    throw new Error("User not found");
+  }
   const nextActions = await prisma.item.findMany({
     where: {
-      userId: userId,
+      userId: user.id,
       status: "NEXT_ACTION",
     },
     include: {
@@ -245,32 +256,40 @@ export async function getNextActionsWithDetails(userId: string) {
   });
 
   const projects = await prisma.project.findMany({
-    where: { userId: userId },
+    where: { userId: user.id },
     select: { id: true, title: true },
   });
 
   const contexts = await prisma.context.findMany({
-    where: { userId: userId },
+    where: { userId: user.id },
     select: { id: true, name: true },
   });
 
   return { nextActions, projects, contexts };
 }
 
-export const getInboxCount = cache(async (userId: string) => {
+export const getInboxCount = cache(async () => {
+  const { user } = await auth();
+  if (!user) {
+    throw new Error("User not found");
+  }
   const count = await prisma.item.count({
     where: {
-      userId,
+      userId: user.id,
       status: "INBOX",
     },
   });
   return count;
 });
 
-export async function getItemToProcess(idOrUserId: string) {
+export async function getItemToProcess(id?: string) {
+  const { user } = await auth();
+  if (!user) {
+    throw new Error("User not found");
+  }
   const item = await prisma.item.findFirst({
     where: {
-      OR: [{ id: idOrUserId }, { userId: idOrUserId, status: "INBOX" }],
+      OR: [{ id: id }, { userId: user?.id, status: "INBOX" }],
     },
     include: {
       contexts: true,
@@ -317,7 +336,10 @@ export async function getItemOfProjects(id: string) {
 }
 
 // Subtask Management
-export async function addSubtask(parentId: string, data: { title: string; notes?: string }) {
+export async function addSubtask(
+  parentId: string,
+  data: { title: string; notes?: string },
+) {
   const { user } = await auth();
   if (!user) {
     throw new Error("User not found");
@@ -369,8 +391,8 @@ export async function reorderSubtasks(parentId: string, subtaskIds: string[]) {
       prisma.subtask.update({
         where: { taskId: id },
         data: { order: index },
-      })
-    )
+      }),
+    ),
   );
 
   revalidatePath("/next-actions");
@@ -400,7 +422,7 @@ export async function addChecklistItem(itemId: string, title: string) {
 
 export async function updateChecklistItem(
   id: string,
-  data: { title?: string; completed?: boolean }
+  data: { title?: string; completed?: boolean },
 ) {
   const checklistItem = await prisma.checklistItem.update({
     where: { id },
@@ -419,14 +441,17 @@ export async function removeChecklistItem(id: string) {
   revalidatePath("/next-actions");
 }
 
-export async function reorderChecklistItems(itemId: string, checklistItemIds: string[]) {
+export async function reorderChecklistItems(
+  itemId: string,
+  checklistItemIds: string[],
+) {
   await prisma.$transaction(
     checklistItemIds.map((id, index) =>
       prisma.checklistItem.update({
         where: { id },
         data: { order: index },
-      })
-    )
+      }),
+    ),
   );
 
   revalidatePath("/next-actions");

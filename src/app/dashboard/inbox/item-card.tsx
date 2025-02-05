@@ -1,17 +1,25 @@
 "use client";
 
+import { getContexts } from "@/actions/contexts";
+import { getProjects } from "@/actions/projects";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+// import { auth } from "@/lib/auth";
 import { getPriorityColor } from "@/lib/utils";
-import { Item, Project, Tag, Subtask, ChecklistItem } from "@prisma/client";
+import {
+  ChecklistItem,
+  Context,
+  Item,
+  Project,
+  Subtask,
+  Tag,
+} from "@prisma/client";
 import { differenceInDays, format } from "date-fns";
 import {
   ArrowRight,
   CalendarDays,
   CalendarIcon,
   CheckSquare,
-  ChevronDown,
-  ChevronRight,
   CircleDot,
   Clock,
   Folder,
@@ -19,12 +27,13 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { EditItemDialog } from "./edit-item-dialog";
 
 interface ItemWithProject extends Item {
   project?: Project;
   tags?: Tag[];
+  contexts?: Context[];
   subtasks?: Array<Subtask & { task: Item }>;
   checklistItems?: ChecklistItem[];
 }
@@ -32,6 +41,26 @@ interface ItemWithProject extends Item {
 export function ItemCard({ item: initialItem }: { item: ItemWithProject }) {
   const [isOpen, setIsOpen] = useState(false);
   const [item, setItem] = useState<ItemWithProject>(initialItem);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [contexts, setContexts] = useState<Context[]>([]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [projectsData, contextsData] = await Promise.all([
+          getProjects(),
+          getContexts(),
+        ]);
+
+        setProjects(projectsData);
+        setContexts(contextsData);
+      } catch (error) {
+        console.error("Failed to load projects and contexts:", error);
+      }
+    };
+
+    loadData();
+  }, []);
   const {
     id,
     title,
@@ -120,13 +149,15 @@ export function ItemCard({ item: initialItem }: { item: ItemWithProject }) {
               {item.subtasks && item.subtasks.length > 0 && (
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
                   <ListTodo className="h-3 w-3" />
-                  {item.subtasks.length} subtask{item.subtasks.length !== 1 ? 's' : ''}
+                  {item.subtasks.length} subtask
+                  {item.subtasks.length !== 1 ? "s" : ""}
                 </div>
               )}
               {item.checklistItems && item.checklistItems.length > 0 && (
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
                   <CheckSquare className="h-3 w-3" />
-                  {item.checklistItems.filter(i => i.completed).length}/{item.checklistItems.length} completed
+                  {item.checklistItems.filter((i) => i.completed).length}/
+                  {item.checklistItems.length} completed
                 </div>
               )}
             </div>
@@ -166,9 +197,10 @@ export function ItemCard({ item: initialItem }: { item: ItemWithProject }) {
           </div>
         </CardContent>
       </Card>
-
       <EditItemDialog
         item={item}
+        projects={projects}
+        contexts={contexts}
         open={isOpen}
         onOpenChange={setIsOpen}
         onUpdate={setItem}
