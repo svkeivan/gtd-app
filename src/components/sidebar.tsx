@@ -12,6 +12,7 @@ import {
   CheckSquare,
   ChevronLeft,
   ChevronRight,
+  Clock,
   FolderKanban,
   Inbox,
   LayoutDashboard,
@@ -114,6 +115,12 @@ export function Sidebar() {
       href: "/dashboard/calendar",
       label: "Calendar",
       icon: Calendar,
+      category: "tools",
+    },
+    {
+      href: "/dashboard/time-tracking",
+      label: "Time Tracking",
+      icon: Clock,
       category: "tools",
     },
     {
