@@ -11,7 +11,7 @@ export function InboxList({ initialItems }: { initialItems: Item[] }) {
   const [search, setSearch] = useState<string>("");
   useEffect(() => {
     setItems(initialItems);
-  }, [initialItems, setItems]);
+  }, [initialItems]);
 
   const statusValues = ["all", ...new Set(items.map((item) => item.status))];
 
