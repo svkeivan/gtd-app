@@ -17,7 +17,7 @@ export function ContextList({
   }, [initialContexts, setContexts]);
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       {contexts.map((context) => (
         <ContextCard key={context.id} context={context} />
       ))}

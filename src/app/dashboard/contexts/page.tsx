@@ -11,7 +11,7 @@ export default async function ContextsPage() {
     return <div>Please sign in to view your contexts.</div>;
   }
 
-  const contexts = await getContexts(session.user.id);
+  const contexts = await getContexts();
 
   return (
     <div className='container mx-auto p-4 space-y-6'>
