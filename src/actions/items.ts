@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@/lib/auth";
-import { CommentType, ItemStatus, PrismaClient } from "@prisma/client";
+import { CommentType, ItemStatus, PrismaClient, PriorityLevel } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { cache } from "react";
 
@@ -11,11 +11,20 @@ export async function createItem(data: {
   title: string;
   notes?: string;
   projectId?: string;
+  priority?: PriorityLevel;
+  estimated?: number;
+  requiresFocus?: boolean;
 }) {
   const { user } = await auth();
   if (!user) {
     throw new Error("User not found");
   }
+
+  // Validate estimated time if provided
+  if (data.estimated) {
+    data.estimated = Math.min(Math.max(data.estimated, 5), 480);
+  }
+
   const item = await prisma.item.create({
     data: {
       title: data.title,
@@ -23,8 +32,12 @@ export async function createItem(data: {
       status: data.projectId ? "PROJECT" : "INBOX",
       projectId: data.projectId ?? null,
       userId: user.id,
+      priority: data.priority ?? "MEDIUM",
+      estimated: data.estimated,
+      requiresFocus: data.requiresFocus ?? false,
     },
   });
+
   if (data.projectId) {
     revalidatePath(`/projects/${data.projectId}`);
   } else {
@@ -121,6 +134,8 @@ export async function processItem(
     notes?: string;
     estimated?: number;
     dueDate?: Date;
+    priority?: PriorityLevel;
+    requiresFocus?: boolean;
   },
 ) {
   const { user } = await auth();
@@ -139,6 +154,11 @@ export async function processItem(
     throw new Error("Item not found");
   }
 
+  // Validate estimated time if provided
+  if (data.estimated) {
+    data.estimated = Math.min(Math.max(data.estimated, 5), 480);
+  }
+
   const item = await prisma.item.update({
     where: { id: itemId },
     data: {
@@ -150,6 +170,8 @@ export async function processItem(
       notes: data.notes,
       estimated: data.estimated,
       dueDate: data.dueDate,
+      priority: data.priority,
+      requiresFocus: data.requiresFocus,
     },
   });
 
@@ -473,8 +495,9 @@ export async function updateItem(
     status?: ItemStatus;
     projectId?: string | null;
     contextIds?: string[];
-    priority?: number;
+    priority?: PriorityLevel;
     estimated?: number;
+    requiresFocus?: boolean;
   },
 ) {
   const currentItem = await prisma.item.findUnique({
@@ -488,6 +511,11 @@ export async function updateItem(
     throw new Error("Item not found");
   }
 
+  // Validate estimated time if provided
+  if (data.estimated) {
+    data.estimated = Math.min(Math.max(data.estimated, 5), 480);
+  }
+
   const item = await prisma.item.update({
     where: { id },
     data: {
@@ -497,6 +525,7 @@ export async function updateItem(
       ...(data.projectId !== undefined && { projectId: data.projectId }),
       ...(data.priority !== undefined && { priority: data.priority }),
       ...(data.estimated !== undefined && { estimated: data.estimated }),
+      ...(data.requiresFocus !== undefined && { requiresFocus: data.requiresFocus }),
       ...(data.contextIds && {
         contexts: {
           set: data.contextIds.map((id) => ({ id })),
@@ -632,11 +661,14 @@ export async function updateItemPlanning(
     throw new Error("User not found");
   }
 
+  // Validate estimated time
+  const validatedEstimate = Math.min(Math.max(data.estimated, 5), 480);
+
   const item = await prisma.item.update({
     where: { id: itemId },
     data: {
       plannedDate: data.plannedDate,
-      estimated: data.estimated,
+      estimated: validatedEstimate,
     },
   });
 
@@ -644,8 +676,169 @@ export async function updateItemPlanning(
   return item;
 }
 
+interface TaskBreakdown {
+  focusSessions: number;
+  shortBreaks: number;
+  longBreaks: number;
+  remainingTime: number;
+  totalDuration: number;
+}
+
+export async function calculateTaskBreakdown(itemId: string): Promise<TaskBreakdown> {
+  const { user: sessionUser } = await auth();
+  if (!sessionUser) {
+    throw new Error("User not found");
+  }
+
+  // Get the full user data with preferences
+  const user = await prisma.user.findUnique({
+    where: { id: sessionUser.id },
+    select: {
+      pomodoroDuration: true,
+      breakDuration: true,
+      longBreakDuration: true,
+      shortBreakInterval: true,
+    },
+  });
+
+  if (!user) {
+    throw new Error("User preferences not found");
+  }
+
+  // Get the item with its estimated time
+  const item = await prisma.item.findUnique({
+    where: { id: itemId },
+    select: {
+      estimated: true,
+      requiresFocus: true,
+    },
+  });
+
+  if (!item?.estimated) {
+    throw new Error("Item has no estimated duration");
+  }
+
+  // If task doesn't require focus, return simple breakdown
+  if (!item.requiresFocus) {
+    return {
+      focusSessions: 1,
+      shortBreaks: 0,
+      longBreaks: 0,
+      remainingTime: item.estimated,
+      totalDuration: item.estimated,
+    };
+  }
+
+  const pomodoroDuration = user.pomodoroDuration;
+  const shortBreakDuration = user.breakDuration;
+  const longBreakDuration = user.longBreakDuration;
+  const sessionsBeforeLongBreak = user.shortBreakInterval;
+
+  // Calculate number of complete focus sessions needed
+  const totalMinutes = item.estimated;
+  const fullSessions = Math.floor(totalMinutes / pomodoroDuration);
+  const remainingTime = totalMinutes % pomodoroDuration;
+
+  // Calculate breaks needed
+  const longBreaks = Math.floor(fullSessions / sessionsBeforeLongBreak);
+  const shortBreaks = fullSessions - longBreaks - (remainingTime > 0 ? 0 : 1);
+
+  // Calculate total duration including breaks
+  const totalDuration =
+    totalMinutes + // Task time
+    (shortBreaks * shortBreakDuration) + // Short break time
+    (longBreaks * longBreakDuration); // Long break time
+
+  return {
+    focusSessions: fullSessions + (remainingTime > 0 ? 1 : 0),
+    shortBreaks,
+    longBreaks,
+    remainingTime: remainingTime,
+    totalDuration,
+  };
+}
+
+export async function splitTaskIntoSessions(itemId: string): Promise<void> {
+  const { user: sessionUser } = await auth();
+  if (!sessionUser) {
+    throw new Error("User not found");
+  }
+
+  // Get the breakdown first
+  const breakdown = await calculateTaskBreakdown(itemId);
+  
+  // Get the original task
+  const originalTask = await prisma.item.findUnique({
+    where: { id: itemId },
+    select: {
+      title: true,
+      estimated: true,
+      requiresFocus: true,
+    },
+  });
+
+  if (!originalTask?.estimated || !originalTask.requiresFocus) {
+    throw new Error("Task cannot be split: missing estimation or focus requirement");
+  }
+
+  // Get user preferences for session duration
+  const user = await prisma.user.findUnique({
+    where: { id: sessionUser.id },
+    select: {
+      pomodoroDuration: true,
+    },
+  });
+
+  if (!user) {
+    throw new Error("User preferences not found");
+  }
+
+  // Create subtasks for each focus session
+  for (let i = 0; i < breakdown.focusSessions; i++) {
+    const isLastSession = i === breakdown.focusSessions - 1;
+    const sessionDuration = isLastSession && breakdown.remainingTime > 0
+      ? breakdown.remainingTime
+      : user.pomodoroDuration;
+
+    const sessionTitle = `${originalTask.title} - Session ${i + 1}/${breakdown.focusSessions}`;
+    
+    // Create the session subtask
+    const subtaskItem = await prisma.item.create({
+      data: {
+        title: sessionTitle,
+        status: "NEXT_ACTION",
+        userId: sessionUser.id,
+        estimated: sessionDuration,
+        requiresFocus: true,
+      },
+    });
+
+    // Link it as a subtask
+    await prisma.subtask.create({
+      data: {
+        parentId: itemId,
+        taskId: subtaskItem.id,
+        order: i,
+      },
+    });
+  }
+
+  // Update the original task to mark it as split
+  await prisma.item.update({
+    where: { id: itemId },
+    data: {
+      notes: `Split into ${breakdown.focusSessions} focus sessions\n` +
+        `Total duration: ${breakdown.totalDuration} minutes\n` +
+        `Short breaks: ${breakdown.shortBreaks}\n` +
+        `Long breaks: ${breakdown.longBreaks}`,
+    },
+  });
+
+  revalidatePath("/next-actions");
+}
+
 export async function updateItemsPriority(
-  items: { id: string; priority: number }[],
+  items: { id: string; priority: PriorityLevel }[],
 ) {
   const { user } = await auth();
   if (!user) {

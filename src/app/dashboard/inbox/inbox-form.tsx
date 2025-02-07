@@ -7,21 +7,44 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAppStore } from "@/lib/store";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { PriorityLevel } from "@prisma/client";
+import { cn } from "@/lib/utils";
 
 export function InboxForm({ projectId }: { projectId?: string }) {
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
+  const [priority, setPriority] = useState<PriorityLevel>("MEDIUM");
+  const [estimated, setEstimated] = useState<number>(30);
+  const [requiresFocus, setRequiresFocus] = useState(false);
   const router = useRouter();
   const addItem = useAppStore((state) => state.addItem);
+
+  const handleEstimatedChange = (value: number) => {
+    // Clamp value between 5 and 480 minutes
+    setEstimated(Math.min(Math.max(value, 5), 480));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
 
-    const newItem = await createItem({ title, notes, projectId });
+    const newItem = await createItem({ 
+      title, 
+      notes, 
+      projectId,
+      priority,
+      estimated,
+      requiresFocus
+    });
     addItem(newItem);
     setTitle("");
     setNotes("");
+    setPriority("MEDIUM");
+    setEstimated(30);
+    setRequiresFocus(false);
     router.refresh();
   };
 
@@ -50,6 +73,60 @@ export function InboxForm({ projectId }: { projectId?: string }) {
               rows={3}
               className="resize-none"
             />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="priority">Priority Level</Label>
+              <Select value={priority} onValueChange={(value: PriorityLevel) => setPriority(value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="LOW">
+                    <span className={cn("inline-block w-2 h-2 rounded-full mr-2 bg-slate-400")} />
+                    Low
+                  </SelectItem>
+                  <SelectItem value="MEDIUM">
+                    <span className={cn("inline-block w-2 h-2 rounded-full mr-2 bg-blue-500")} />
+                    Medium
+                  </SelectItem>
+                  <SelectItem value="HIGH">
+                    <span className={cn("inline-block w-2 h-2 rounded-full mr-2 bg-yellow-500")} />
+                    High
+                  </SelectItem>
+                  <SelectItem value="URGENT">
+                    <span className={cn("inline-block w-2 h-2 rounded-full mr-2 bg-red-500")} />
+                    Urgent
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="estimated">Estimated Time (minutes)</Label>
+              <Input
+                id="estimated"
+                type="number"
+                min={5}
+                max={480}
+                value={estimated}
+                onChange={(e) => handleEstimatedChange(Number(e.target.value))}
+                className="h-10"
+              />
+              <p className="text-xs text-muted-foreground">Between 5 and 480 minutes (8 hours)</p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="focus-mode"
+              checked={requiresFocus}
+              onCheckedChange={setRequiresFocus}
+            />
+            <Label htmlFor="focus-mode" className="cursor-pointer">
+              Requires Focus Mode
+              <p className="text-xs text-muted-foreground">
+                Enable for tasks that need concentrated attention
+              </p>
+            </Label>
           </div>
           <div className="flex justify-end">
             <Button type="submit" size="lg" className="px-8">
