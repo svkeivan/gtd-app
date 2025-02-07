@@ -36,12 +36,69 @@ model User {
   tags              Tag[]
   reviews           Review[]
   timeEntries       TimeEntry[]
+  focusSessions     FocusSession[]
+  breakSessions     BreakSession[]
+  dailyMetrics      DailyProductivity[]
   comments          TaskComment[]
   notifications     CommentNotification[]
   auditLogs         AuditLog[]
   subscription      Subscription?
   createdAt         DateTime              @default(now())
   updatedAt         DateTime              @updatedAt
+}
+
+// New model for tracking focus (pomodoro) sessions
+model FocusSession {
+  id          String      @id @default(cuid())
+  startTime   DateTime
+  endTime     DateTime?
+  duration    Int         // Duration in minutes
+  completed   Boolean     @default(false)
+  interrupted Boolean     @default(false)
+  item        Item?       @relation(fields: [itemId], references: [id])
+  itemId      String?
+  user        User        @relation(fields: [userId], references: [id])
+  userId      String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+// New model for tracking break sessions
+model BreakSession {
+  id          String      @id @default(cuid())
+  startTime   DateTime
+  endTime     DateTime?
+  duration    Int         // Duration in minutes
+  type        BreakType
+  completed   Boolean     @default(false)
+  skipped     Boolean     @default(false)
+  user        User        @relation(fields: [userId], references: [id])
+  userId      String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+enum BreakType {
+  SHORT
+  LONG
+  LUNCH
+}
+
+// New model for tracking daily productivity metrics
+model DailyProductivity {
+  id                    String   @id @default(cuid())
+  date                  DateTime
+  user                  User     @relation(fields: [userId], references: [id])
+  userId                String
+  focusSessionsCount    Int      @default(0)
+  focusMinutes         Int      @default(0)
+  completedTasks       Int      @default(0)
+  breakAdherence       Float    @default(0) // Percentage of breaks taken vs scheduled
+  productivity         Float    @default(0) // Overall productivity score
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@unique([userId, date])
 }
 
 enum SubscriptionPlan {
@@ -129,6 +186,7 @@ model Item {
   userId        String
   tags          Tag[]
   TimeEntry     TimeEntry[]
+  focusSessions FocusSession[]
   comments      TaskComment[]
   dependsOn     TaskDependency[] @relation("DependentTask")
   blocks        TaskDependency[] @relation("BlockerTask")

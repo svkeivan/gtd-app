@@ -11,17 +11,25 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TimeDistributionChart } from "./components/time-distribution-chart";
 import { ProductivityHeatmap } from "./components/productivity-heatmap";
 import { TrendChart } from "./components/trend-chart";
+import { FocusProgress } from "./components/focus-progress";
+import { BreakProgress } from "./components/break-progress";
+import { DailyProductivity } from "./components/daily-productivity";
 import useSWR from "swr";
 
 type DateRange = "week" | "month" | "3months";
 
-const fetcher = async (startDate: Date, endDate: Date) => {
-  return getTimeEntriesReport(startDate, endDate, ["time-entries-report"]);
+const fetcher = async (startDate: Date, endDate: Date): Promise<TimeEntryReport | null> => {
+  const result = await getTimeEntriesReport(startDate, endDate, ["time-entries-report"]);
+  return result || null;
 };
 
-export function AnalyticsView() {
+interface AnalyticsViewProps {
+  userId: string;
+}
+
+export function AnalyticsView({ userId }: AnalyticsViewProps) {
   const [dateRange, setDateRange] = useState<DateRange>("week");
-  const [selectedView, setSelectedView] = useState<"distribution" | "heatmap" | "trend">("distribution");
+  const [selectedView, setSelectedView] = useState<"overview" | "distribution" | "heatmap" | "trend">("overview");
 
   // Calculate date range
   const { startDate, endDate } = (() => {
@@ -51,12 +59,13 @@ export function AnalyticsView() {
   })();
 
   // Fetch data with SWR for real-time updates
-  const { data: report, isLoading } = useSWR(
+  const { data, isLoading } = useSWR(
     [startDate, endDate],
     () => fetcher(startDate, endDate),
     {
       refreshInterval: 30000, // Refresh every 30 seconds
       revalidateOnFocus: true,
+      fallbackData: null, // Provide null as fallback to satisfy type system
     }
   );
 
@@ -71,7 +80,7 @@ export function AnalyticsView() {
           <div className="space-y-1">
             <h2 className="text-2xl font-semibold">Time Analytics</h2>
             <p className="text-sm text-muted-foreground">
-              Analyze your time usage patterns and productivity trends
+              Track your productivity and time usage patterns
             </p>
           </div>
           <div className="w-full sm:w-[200px]">
@@ -90,23 +99,35 @@ export function AnalyticsView() {
         </div>
 
         <Tabs value={selectedView} onValueChange={(v) => setSelectedView(v as any)} className="space-y-4">
-          <TabsList className="grid w-full sm:w-[400px] grid-cols-3">
+          <TabsList className="grid w-full sm:w-[400px] grid-cols-4">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="distribution">Distribution</TabsTrigger>
             <TabsTrigger value="heatmap">Patterns</TabsTrigger>
             <TabsTrigger value="trend">Trends</TabsTrigger>
           </TabsList>
 
+          <TabsContent value="overview" className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-3">
+              <DailyProductivity userId={userId} />
+              <FocusProgress userId={userId} />
+              <BreakProgress userId={userId} />
+            </div>
+          </TabsContent>
+
           <TabsContent value="distribution" className="space-y-4">
-            <TimeDistributionChart report={report} isLoading={isLoading} />
+            <TimeDistributionChart report={data} isLoading={isLoading} />
           </TabsContent>
 
           <TabsContent value="heatmap" className="space-y-4">
-            <ProductivityHeatmap entries={report?.entries || []} isLoading={isLoading} />
+            <ProductivityHeatmap 
+              entries={data?.entries || []} 
+              isLoading={isLoading} 
+            />
           </TabsContent>
 
           <TabsContent value="trend" className="space-y-4">
             <TrendChart
-              entries={report?.entries || []}
+              entries={data?.entries || []}
               startDate={startDate}
               endDate={endDate}
               isLoading={isLoading}

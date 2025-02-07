@@ -6,6 +6,7 @@ interface ScheduleSlot {
   end: Date;
   isFocusTime: boolean;
   isBreak: boolean;
+  context?: string; // Track current context
 }
 
 interface ScheduleTask {
@@ -27,6 +28,8 @@ interface ScheduleTask {
     startTime: string;
     endTime: string;
   }[];
+  dependsOn: string[]; // IDs of tasks this task depends on
+  blocks: string[]; // IDs of tasks this task blocks
 }
 
 export class SmartScheduler {
@@ -38,6 +41,7 @@ export class SmartScheduler {
   private readonly longBreakDuration: number;
   private readonly pomodoroDuration: number;
   private readonly shortBreakInterval: number;
+  private readonly contextSwitchPenalty: number = 15; // Minutes penalty for context switch
 
   constructor(userPreferences: {
     workStartTime: string;
@@ -113,11 +117,33 @@ export class SmartScheduler {
     endTime.setMinutes(parseInt(this.workEndTime.split(':')[1], 10));
 
     let focusSessionCount = 0;
+    let lastContextId: string | undefined;
+    let consecutiveWorkTime = 0;
 
     while (currentTime < endTime) {
       // Skip lunch break
       if (this.isLunchTime(currentTime)) {
         currentTime = new Date(currentTime.getTime() + this.lunchDuration * 60000);
+        // Reset counters after lunch
+        focusSessionCount = 0;
+        consecutiveWorkTime = 0;
+        continue;
+      }
+
+      // Add dynamic break if consecutive work time exceeds threshold
+      if (consecutiveWorkTime >= 90) { // 90 minutes max consecutive work
+        const breakTime = Math.min(this.breakDuration, 
+          Math.floor(consecutiveWorkTime / 90) * this.breakDuration);
+        
+        slots.push({
+          start: new Date(currentTime),
+          end: new Date(currentTime.getTime() + breakTime * 60000),
+          isFocusTime: false,
+          isBreak: true
+        });
+
+        currentTime = new Date(currentTime.getTime() + breakTime * 60000);
+        consecutiveWorkTime = 0;
         continue;
       }
 
@@ -131,10 +157,12 @@ export class SmartScheduler {
           start: new Date(currentTime),
           end: new Date(currentTime.getTime() + this.pomodoroDuration * 60000),
           isFocusTime: true,
-          isBreak: false
+          isBreak: false,
+          context: lastContextId
         });
         currentTime = new Date(currentTime.getTime() + this.pomodoroDuration * 60000);
         focusSessionCount++;
+        consecutiveWorkTime += this.pomodoroDuration;
       } else {
         slots.push({
           start: new Date(currentTime),
@@ -144,14 +172,60 @@ export class SmartScheduler {
         });
         currentTime = new Date(currentTime.getTime() + breakDuration * 60000);
         focusSessionCount = 0;
+        consecutiveWorkTime = 0;
       }
     }
 
     return slots;
   }
 
+  private buildDependencyGraph(tasks: ScheduleTask[]): Map<string, Set<string>> {
+    const graph = new Map<string, Set<string>>();
+    
+    // Initialize graph
+    tasks.forEach(task => {
+      graph.set(task.id, new Set<string>());
+    });
+
+    // Add dependencies
+    tasks.forEach(task => {
+      task.dependsOn.forEach(dependencyId => {
+        const dependencies = graph.get(task.id);
+        if (dependencies) {
+          dependencies.add(dependencyId);
+        }
+      });
+    });
+
+    return graph;
+  }
+
+  private topologicalSort(tasks: ScheduleTask[]): ScheduleTask[] {
+    const graph = this.buildDependencyGraph(tasks);
+    const visited = new Set<string>();
+    const sorted: ScheduleTask[] = [];
+
+    function visit(taskId: string) {
+      if (visited.has(taskId)) return;
+      visited.add(taskId);
+
+      const dependencies = graph.get(taskId) || new Set();
+      dependencies.forEach(depId => visit(depId));
+
+      const task = tasks.find(t => t.id === taskId);
+      if (task) sorted.push(task);
+    }
+
+    tasks.forEach(task => visit(task.id));
+    return sorted.reverse();
+  }
+
   private prioritizeTasks(tasks: ScheduleTask[]): ScheduleTask[] {
-    return [...tasks].sort((a, b) => {
+    // First handle dependencies through topological sort
+    const sortedTasks = this.topologicalSort(tasks);
+
+    // Then sort by priority within dependency constraints
+    return sortedTasks.sort((a, b) => {
       // First prioritize by urgency
       const priorityOrder = {
         [PriorityLevel.URGENT]: 4,
@@ -178,7 +252,7 @@ export class SmartScheduler {
     plannedDate: Date;
     estimated: number;
   }[]> {
-    // Fetch unscheduled tasks with their contexts
+    // Fetch unscheduled tasks with their contexts and dependencies
     const tasks = await prisma.item.findMany({
       where: {
         userId,
@@ -210,22 +284,44 @@ export class SmartScheduler {
             startTime: true,
             endTime: true,
           }
+        },
+        dependsOn: {
+          select: {
+            blockerTaskId: true
+          }
+        },
+        blocks: {
+          select: {
+            dependentTaskId: true
+          }
         }
       }
     });
 
+    // Transform tasks to include dependency information
+    const transformedTasks: ScheduleTask[] = tasks.map(task => ({
+      ...task,
+      dependsOn: task.dependsOn.map(d => d.blockerTaskId),
+      blocks: task.blocks.map(b => b.dependentTaskId)
+    }));
+
     const slots = await this.getAvailableSlots(date);
-    const prioritizedTasks = this.prioritizeTasks(tasks);
+    const prioritizedTasks = this.prioritizeTasks(transformedTasks);
     const scheduledTasks: {
       taskId: string;
       plannedDate: Date;
       estimated: number;
     }[] = [];
 
+    let currentContextId: string | undefined;
+
     for (const task of prioritizedTasks) {
       // Find appropriate slot for task
       const taskDuration = task.estimated || 30; // Default to 30 minutes
       const requiresFocus = task.requiresFocus;
+
+      let bestSlot: ScheduleSlot | null = null;
+      let bestScore = -Infinity;
 
       for (const slot of slots) {
         // Skip if slot duration doesn't match task requirements
@@ -236,21 +332,51 @@ export class SmartScheduler {
         if (requiresFocus && !slot.isFocusTime) continue;
 
         // Skip if no matching context is available
-        const hasAvailableContext = task.contexts.some(
+        const availableContexts = task.contexts.filter(
           context => this.isContextAvailable(context, slot.start)
         );
-        if (!hasAvailableContext) continue;
+        if (availableContexts.length === 0) continue;
 
-        // Schedule task in this slot
+        // Calculate slot score based on various factors
+        let score = 0;
+
+        // Prefer slots that maintain the same context
+        const matchingContext = availableContexts.find(c => c.id === currentContextId);
+        if (matchingContext) {
+          score += 10; // High bonus for context continuity
+        }
+
+        // Penalize context switches
+        if (!matchingContext && currentContextId) {
+          score -= 5;
+        }
+
+        // Prefer earlier slots for higher priority tasks
+        const hoursSinceStart = (slot.start.getTime() - date.getTime()) / (1000 * 60 * 60);
+        score -= hoursSinceStart * (task.priority === 'URGENT' ? 2 : 1);
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestSlot = slot;
+        }
+      }
+
+      if (bestSlot) {
+        // Schedule task in best slot
         scheduledTasks.push({
           taskId: task.id,
-          plannedDate: slot.start,
+          plannedDate: bestSlot.start,
           estimated: taskDuration
         });
 
+        // Update context tracking
+        if (task.contexts.length > 0) {
+          currentContextId = task.contexts[0].id;
+          bestSlot.context = currentContextId;
+        }
+
         // Mark slot as used by adjusting its start time
-        slot.start = new Date(slot.start.getTime() + taskDuration * 60000);
-        break;
+        bestSlot.start = new Date(bestSlot.start.getTime() + taskDuration * 60000);
       }
     }
 
