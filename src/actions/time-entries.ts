@@ -4,18 +4,41 @@ import { revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { CreateTimeEntryData, TimeEntry, TimeEntryReport } from "@/types/time-entry-types";
+import { ItemStatus } from "@prisma/client";
+
+export async function getNextActionItems() {
+  const { user } = await auth();
+  if (!user?.id || !user.isLoggedIn) {
+    throw new Error("You must be logged in to view next action items");
+  }
+
+  const items = await prisma.item.findMany({
+    where: {
+      userId: user.id,
+      status: ItemStatus.NEXT_ACTION,
+    },
+    select: {
+      id: true,
+      title: true,
+    },
+    orderBy: {
+      updatedAt: 'desc',
+    },
+  });
+
+  return items;
+}
 
 export async function createTimeEntry(data: CreateTimeEntryData): Promise<TimeEntry> {
   const { user } = await auth();
-  if (!user?.id) {
-    throw new Error("Unauthorized");
+  if (!user?.id || !user.isLoggedIn) {
+    throw new Error("You must be logged in to create time entries");
   }
 
   const duration = Math.round(
     (data.endTime.getTime() - data.startTime.getTime()) / (1000 * 60)
   );
 
-  // @ts-ignore - category field is added by migration but types aren't updated
   const timeEntry = await prisma.timeEntry.create({
     data: {
       startTime: data.startTime,
@@ -24,7 +47,7 @@ export async function createTimeEntry(data: CreateTimeEntryData): Promise<TimeEn
       category: data.category,
       note: data.note,
       userId: user.id,
-      itemId: data.itemId || "",
+      itemId: data.itemId,
     },
   });
 

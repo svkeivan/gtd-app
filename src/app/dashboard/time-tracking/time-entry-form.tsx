@@ -1,15 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { createTimeEntry } from "@/actions/time-entries";
+import { createTimeEntry, getNextActionItems } from "@/actions/time-entries";
 import { toast } from "sonner";
 import { CreateTimeEntryData } from "@/types/time-entry-types";
+
+type NextActionItem = {
+  id: string;
+  title: string;
+};
 
 const CATEGORIES = [
   "Work",
@@ -28,7 +33,23 @@ export function TimeEntryForm() {
   const [endTime, setEndTime] = useState("");
   const [category, setCategory] = useState<Category | "">("");
   const [note, setNote] = useState("");
+  const [itemId, setItemId] = useState<string>("");
+  const [nextActionItems, setNextActionItems] = useState<NextActionItem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const loadNextActionItems = async () => {
+      try {
+        const items = await getNextActionItems();
+        setNextActionItems(items);
+      } catch (error) {
+        console.error("Error loading next action items:", error);
+        toast.error("Failed to load next action items");
+      }
+    };
+
+    loadNextActionItems();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,6 +74,7 @@ export function TimeEntryForm() {
         endTime: end,
         category,
         note: note || undefined,
+        itemId: itemId || undefined,
       };
 
       await createTimeEntry(timeEntryData);
@@ -62,10 +84,12 @@ export function TimeEntryForm() {
       setStartTime("");
       setEndTime("");
       setCategory("");
+      setItemId("");
       setNote("");
     } catch (error) {
       console.error("Error saving time entry:", error);
-      toast.error("Failed to save time entry");
+      const errorMessage = error instanceof Error ? error.message : "Failed to save time entry";
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -107,6 +131,23 @@ export function TimeEntryForm() {
               {CATEGORIES.map((cat) => (
                 <SelectItem key={cat} value={cat}>
                   {cat}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="item">Next Action Item (Optional)</Label>
+          <Select value={itemId} onValueChange={setItemId}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select an item to track time for" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">None</SelectItem>
+              {nextActionItems.map((item) => (
+                <SelectItem key={item.id} value={item.id}>
+                  {item.title}
                 </SelectItem>
               ))}
             </SelectContent>
