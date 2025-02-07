@@ -54,19 +54,45 @@ const DnDCalendar = withDragAndDrop(
 moment.locale("en-GB");
 const localizer = momentLocalizer(moment);
 
-interface CalendarEvent {
+interface BaseCalendarEvent {
   id: string;
   title: string;
   start: Date;
   end: Date;
   allDay?: boolean;
-  isTask?: boolean;
-  isTimeEntry?: boolean;
-  itemId?: string;
-  estimated?: number;
+}
+
+interface TaskCalendarEvent extends BaseCalendarEvent {
+  isTask: true;
+  itemId: string;
+  contexts: Array<{
+    id: string;
+    name: string;
+  }>;
+  progress: number;
+  timeSpent: number;
+  estimated?: number | null;
   draggedFromOutside?: boolean;
   dataTransfer?: DataTransfer;
 }
+
+interface FocusCalendarEvent extends BaseCalendarEvent {
+  isFocus: true;
+  completed: boolean;
+  interrupted: boolean;
+}
+
+interface BreakCalendarEvent extends BaseCalendarEvent {
+  isBreak: true;
+  breakType: "SHORT" | "LONG" | "LUNCH";
+  completed: boolean;
+  skipped: boolean;
+}
+
+type CalendarEvent =
+  | TaskCalendarEvent
+  | FocusCalendarEvent
+  | BreakCalendarEvent;
 
 interface Task {
   id: string;
@@ -94,9 +120,36 @@ export function CalendarView({ initialEvents }: CalendarViewProps) {
     }
   }, [selectedSlot]);
 
-  const eventPropGetter = (event: CalendarEvent) => ({
-    className: `${event.isTask ? "bg-blue-500" : ""} ${event.isTimeEntry ? "bg-green-500" : ""}`,
-  });
+  const eventPropGetter = (event: CalendarEvent) => {
+    let className = "rounded-md border";
+
+    if ("isTask" in event) {
+      className += " bg-blue-500 hover:bg-blue-600";
+    } else if ("isFocus" in event) {
+      className += event.completed
+        ? " bg-green-500 hover:bg-green-600"
+        : event.interrupted
+          ? " bg-yellow-500 hover:bg-yellow-600"
+          : " bg-purple-500 hover:bg-purple-600";
+    } else if ("isBreak" in event) {
+      switch (event.breakType) {
+        case "SHORT":
+          className += " bg-teal-500 hover:bg-teal-600";
+          break;
+        case "LONG":
+          className += " bg-indigo-500 hover:bg-indigo-600";
+          break;
+        case "LUNCH":
+          className += " bg-orange-500 hover:bg-orange-600";
+          break;
+      }
+      if (event.skipped) {
+        className += " opacity-50";
+      }
+    }
+
+    return { className };
+  };
 
   const onEventDrop = async ({
     event,
@@ -106,7 +159,8 @@ export function CalendarView({ initialEvents }: CalendarViewProps) {
     start: Date;
     end: Date;
   }) => {
-    if (!event.isTask) return;
+    // Only handle task events
+    if (!("isTask" in event)) return;
 
     const duration = event.draggedFromOutside
       ? event.estimated || 30 // Default to 30 minutes for new drops
@@ -120,13 +174,16 @@ export function CalendarView({ initialEvents }: CalendarViewProps) {
         estimated: duration,
       });
 
-      const newEvent: CalendarEvent = {
+      const newEvent: TaskCalendarEvent = {
         id: event.id,
         title: event.title,
         start: new Date(start),
         end: endTime,
         isTask: true,
         itemId: event.id,
+        contexts: event.contexts,
+        progress: event.progress,
+        timeSpent: event.timeSpent,
         estimated: duration,
       };
 
@@ -149,18 +206,21 @@ export function CalendarView({ initialEvents }: CalendarViewProps) {
     start: Date;
     end: Date;
   }) => {
-    if (!event.isTask) return;
+    // Only handle task events
+    if (!("isTask" in event)) return;
 
     try {
-      await updateItemPlanning(event.itemId!, {
+      const duration = moment(end).diff(moment(start), "minutes");
+      await updateItemPlanning(event.itemId, {
         plannedDate: start,
-        estimated: moment(end).diff(moment(start), "minutes"),
+        estimated: duration,
       });
 
-      const updatedEvent = {
+      const updatedEvent: TaskCalendarEvent = {
         ...event,
         start: new Date(start),
         end: new Date(end),
+        estimated: duration,
       };
       setEvents(events.map((e) => (e.id === event.id ? updatedEvent : e)));
     } catch (error) {
@@ -186,13 +246,16 @@ export function CalendarView({ initialEvents }: CalendarViewProps) {
         estimated: duration,
       });
 
-      const newEvent: CalendarEvent = {
+      const newEvent: TaskCalendarEvent = {
         id: task.id,
         title: task.title,
         start: new Date(selectedSlot.start),
         end: moment(selectedSlot.start).add(duration, "minutes").toDate(),
         isTask: true,
         itemId: task.id,
+        contexts: [],
+        progress: 0,
+        timeSpent: 0,
         estimated: duration,
       };
 
@@ -208,15 +271,11 @@ export function CalendarView({ initialEvents }: CalendarViewProps) {
     setIsScheduling(true);
     try {
       const today = new Date();
-      const scheduledTasks = await scheduleUnplannedTasks(
-        // Since this is client component, we'll get userId from the URL or context
-        window.location.pathname.split("/")[2],
-        today,
-      );
+      const scheduledTasks = await scheduleUnplannedTasks(today);
 
       // Add newly scheduled tasks to calendar
       const newEvents = scheduledTasks.map(
-        (task): CalendarEvent => ({
+        (task): TaskCalendarEvent => ({
           id: task.taskId,
           title:
             tasks.find((t) => t.id === task.taskId)?.title || "Scheduled Task",
@@ -224,6 +283,9 @@ export function CalendarView({ initialEvents }: CalendarViewProps) {
           end: new Date(task.plannedDate.getTime() + task.estimated * 60000),
           isTask: true,
           itemId: task.taskId,
+          contexts: [],
+          progress: 0,
+          timeSpent: 0,
           estimated: task.estimated,
         }),
       );
@@ -309,13 +371,75 @@ export function CalendarView({ initialEvents }: CalendarViewProps) {
           onSelectSlot={handleSelectSlot}
           defaultView="week"
           components={{
-            event: ({ event }) => (
-              <div
-                className={`${event.isTask ? "bg-blue-500" : ""} ${event.isTimeEntry ? "bg-green-500" : ""} rounded p-1 text-sm text-white`}
-              >
-                {event.title}
-              </div>
-            ),
+            event: ({ event }) => {
+              if ("isTask" in event) {
+                return (
+                  <div className="flex h-full flex-col justify-between overflow-hidden rounded p-1 text-sm text-white">
+                    <div className="flex items-center justify-between">
+                      <span>{event.title}</span>
+                      {event.contexts.length > 0 && (
+                        <span className="ml-1 text-xs">
+                          {event.contexts.map((c) => c.name).join(", ")}
+                        </span>
+                      )}
+                    </div>
+                    {event.estimated && (
+                      <div className="mt-1">
+                        <div className="h-1 w-full rounded-full bg-blue-300">
+                          <div
+                            className="h-full rounded-full bg-blue-100"
+                            style={{ width: `${event.progress}%` }}
+                          />
+                        </div>
+                        <div className="mt-0.5 flex justify-between text-xs">
+                          <span>{event.timeSpent}m spent</span>
+                          <span>{event.estimated}m estimated</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
+              if ("isFocus" in event) {
+                return (
+                  <div className="flex flex-col rounded p-1 text-sm text-white">
+                    <div className="flex items-center justify-between">
+                      <span>{event.title}</span>
+                      <div className="flex items-center space-x-1">
+                        {event.completed && <span className="text-xs">✓</span>}
+                        {event.interrupted && (
+                          <span className="text-xs">⚠</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="mt-0.5 text-xs">
+                      {moment(event.end).diff(moment(), "minutes")} min
+                      remaining
+                    </div>
+                  </div>
+                );
+              }
+
+              if ("isBreak" in event) {
+                return (
+                  <div className="flex flex-col rounded p-1 text-sm text-white">
+                    <div className="flex items-center justify-between">
+                      <span>{event.title}</span>
+                      {event.skipped && <span className="text-xs">⨯</span>}
+                    </div>
+                    <div className="mt-0.5 text-xs">
+                      {moment(event.end).diff(moment(), "minutes")} min
+                      remaining
+                    </div>
+                  </div>
+                );
+              }
+
+              // This case should never happen due to our union type, but TypeScript needs it
+              const _exhaustiveCheck: never = event;
+              return null;
+            },
           }}
         />
       </div>

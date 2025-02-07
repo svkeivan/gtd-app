@@ -1,9 +1,15 @@
 "use server";
 
+import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { SmartScheduler } from "@/lib/scheduler";
 
-export async function scheduleUnplannedTasks(userId: string, date: Date) {
+export async function scheduleUnplannedTasks( date: Date) {
+  const { user:authenticateUser } = await auth();
+    if (!authenticateUser) {
+      throw new Error("User not found");
+    }
+    const userId = authenticateUser.id;
   try {
     // Get user preferences
     const user = await prisma.user.findUnique({
