@@ -23,6 +23,15 @@ export async function getProfile() {
       timezone: true,
       avatar: true,
       profileComplete: true,
+      // Work schedule preferences
+      workStartTime: true,
+      workEndTime: true,
+      lunchStartTime: true,
+      lunchDuration: true,
+      breakDuration: true,
+      longBreakDuration: true,
+      pomodoroDuration: true,
+      shortBreakInterval: true,
       subscription: {
         select: {
           plan: true,
@@ -66,6 +75,14 @@ export async function updateProfile(data: ProfileFormData) {
         theme: true,
         timezone: true,
         avatar: true,
+        workStartTime: true,
+        workEndTime: true,
+        lunchStartTime: true,
+        lunchDuration: true,
+        breakDuration: true,
+        longBreakDuration: true,
+        pomodoroDuration: true,
+        shortBreakInterval: true,
       },
     });
 
@@ -104,6 +121,14 @@ export async function updateProfile(data: ProfileFormData) {
     timezone: updatedUser.timezone,
     avatar: updatedUser.avatar,
     profileComplete: updatedUser.profileComplete,
+    workStartTime: updatedUser.workStartTime,
+    workEndTime: updatedUser.workEndTime,
+    lunchStartTime: updatedUser.lunchStartTime,
+    lunchDuration: updatedUser.lunchDuration,
+    breakDuration: updatedUser.breakDuration,
+    longBreakDuration: updatedUser.longBreakDuration,
+    pomodoroDuration: updatedUser.pomodoroDuration,
+    shortBreakInterval: updatedUser.shortBreakInterval,
   };
 }
 

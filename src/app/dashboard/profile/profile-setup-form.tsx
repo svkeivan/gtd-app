@@ -1,154 +1,190 @@
-'use client'
-import { useState, useEffect } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
-import { getProfile, updateProfile} from '@/actions/profile'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Progress } from '@/components/ui/progress'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { ProfileFormData, profileSchema } from '@/types/profile-types'
+"use client";
+import { getProfile, updateProfile } from "@/actions/profile";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ProfileFormData, profileSchema } from "@/types/profile-types";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
-const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ALLOWED_FILE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 export function ProfileSetupForm() {
-  const [progress, setProgress] = useState(0)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
+  const [progress, setProgress] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
-  const [isLoading, setIsLoading] = useState(true)
-  const [isSaving, setIsSaving] = useState(false)
-  const [originalData, setOriginalData] = useState<ProfileFormData | null>(null)
-  
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [originalData, setOriginalData] = useState<ProfileFormData | null>(
+    null,
+  );
+
   const form = useForm<ProfileFormData>({
-    mode: 'onChange', // Enable real-time validation
+    mode: "onChange", // Enable real-time validation
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      language: 'en',
-      theme: 'system',
+      language: "en",
+      theme: "system",
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      workStartTime: "09:00",
+      workEndTime: "17:00",
+      lunchStartTime: "12:00",
+      lunchDuration: 60,
+      breakDuration: 15,
+      longBreakDuration: 30,
+      pomodoroDuration: 25,
+      shortBreakInterval: 3,
     },
-  })
+  });
 
   // Fetch user profile data on mount
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const data = await getProfile()
+        const data = await getProfile();
         const initialData: ProfileFormData = {
-          name: data.name || '',
-          language: (data.language as ProfileFormData['language']) || 'en',
-          theme: (data.theme as ProfileFormData['theme']) || 'system',
-          timezone: data.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
-          avatar: data.avatar || '',
-        }
-        setOriginalData(initialData)
-        form.reset(initialData)
-        
-        // Update progress based on fetched data
-        const values = form.getValues()
-        const totalFields = Object.keys(profileSchema.shape).length
-        const completedFields = Object.entries(values).filter(([_, value]) => value).length
-        setProgress((completedFields / totalFields) * 100)
-      } catch (err) {
-        console.error('Error fetching profile:', err)
-        setError('Failed to load profile data')
-      } finally {
-        setIsLoading(false)
-      }
-    }
+          name: data.name || "",
+          language: (data.language as ProfileFormData["language"]) || "en",
+          theme: (data.theme as ProfileFormData["theme"]) || "system",
+          timezone:
+            data.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+          avatar: data.avatar || "",
+          workStartTime: data.workStartTime || "09:00",
+          workEndTime: data.workEndTime || "17:00",
+          lunchStartTime: data.lunchStartTime || "12:00",
+          lunchDuration: data.lunchDuration || 60,
+          breakDuration: data.breakDuration || 15,
+          longBreakDuration: data.longBreakDuration || 30,
+          pomodoroDuration: data.pomodoroDuration || 25,
+          shortBreakInterval: data.shortBreakInterval || 3,
+        };
+        setOriginalData(initialData);
+        form.reset(initialData);
 
-    fetchProfile()
-  }, [form])
+        // Update progress based on fetched data
+        const values = form.getValues();
+        const totalFields = Object.keys(profileSchema.shape).length;
+        const completedFields = Object.entries(values).filter(
+          ([_, value]) => value,
+        ).length;
+        setProgress((completedFields / totalFields) * 100);
+      } catch (err) {
+        console.error("Error fetching profile:", err);
+        setError("Failed to load profile data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, [form]);
 
   // Calculate form completion progress
   useEffect(() => {
-    const values = form.getValues()
-    const totalFields = Object.keys(profileSchema.shape).length
-    const completedFields = Object.entries(values).filter(([_, value]) => value).length
-    setProgress((completedFields / totalFields) * 100)
-  }, [form.watch()])
+    const values = form.getValues();
+    const totalFields = Object.keys(profileSchema.shape).length;
+    const completedFields = Object.entries(values).filter(
+      ([_, value]) => value,
+    ).length;
+    setProgress((completedFields / totalFields) * 100);
+  }, [form.watch()]);
 
   const handleCancel = () => {
     if (originalData) {
-      form.reset(originalData)
-      setError(null)
-      setSuccess(false)
+      form.reset(originalData);
+      setError(null);
+      setSuccess(false);
     }
-  }
+  };
 
   const onSubmit = async (data: ProfileFormData) => {
     try {
-      setIsSaving(true)
-      setError(null)
-      
+      setIsSaving(true);
+      setError(null);
+
       // Optimistically update the form state
-      form.reset(data)
-      
-      await updateProfile(data)
-      setOriginalData(data)
-      setSuccess(true)
-      setError(null)
+      form.reset(data);
+
+      await updateProfile(data);
+      setOriginalData(data);
+      setSuccess(true);
+      setError(null);
     } catch (err) {
       // Revert to previous state on error
-      form.reset(originalData || {})
-      setError(err instanceof Error ? err.message : 'An error occurred')
-      setSuccess(false)
+      form.reset(originalData || {});
+      setError(err instanceof Error ? err.message : "An error occurred");
+      setSuccess(false);
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
     }
-  }
+  };
 
   if (isLoading) {
     return (
       <Card>
-        <CardContent className="p-6 flex justify-center items-center min-h-[400px]">
-          <div className="text-center space-y-4">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
+        <CardContent className="flex min-h-[400px] items-center justify-center p-6">
+          <div className="space-y-4 text-center">
+            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
             <p className="text-muted-foreground">Loading profile...</p>
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
-  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
+  const handleAvatarUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
     if (!ALLOWED_FILE_TYPES.includes(file.type)) {
-      setError('Only JPEG, PNG and WebP images are allowed')
-      return
+      setError("Only JPEG, PNG and WebP images are allowed");
+      return;
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      setError('File size must be less than 5MB')
-      return
+      setError("File size must be less than 5MB");
+      return;
     }
 
     try {
-      const formData = new FormData()
-      formData.append('file', file)
+      const formData = new FormData();
+      formData.append("file", file);
 
       // In a real app, you would upload to a storage service
       // For now, we'll use a data URL
-      const reader = new FileReader()
+      const reader = new FileReader();
       reader.onloadend = () => {
-        const base64data = reader.result as string
-        form.setValue('avatar', base64data)
-      }
-      reader.readAsDataURL(file)
+        const base64data = reader.result as string;
+        form.setValue("avatar", base64data);
+      };
+      reader.readAsDataURL(file);
     } catch (err) {
-      console.error('Avatar upload error:', err)
-      setError('Failed to upload avatar')
+      console.error("Avatar upload error:", err);
+      setError("Failed to upload avatar");
     }
-  }
+  };
 
   return (
     <Card>
@@ -158,12 +194,12 @@ export function ProfileSetupForm() {
           Customize your profile information and preferences
         </CardDescription>
       </CardHeader>
-      <CardContent className="p-6 space-y-8">
+      <CardContent className="space-y-8 p-6">
         <div className="flex items-center gap-6">
           <Avatar className="h-24 w-24">
-            <AvatarImage src={form.watch('avatar')} />
+            <AvatarImage src={form.watch("avatar")} />
             <AvatarFallback className="text-lg">
-              {form.watch('name')?.charAt(0) || '?'}
+              {form.watch("name")?.charAt(0) || "?"}
             </AvatarFallback>
           </Avatar>
           <div className="space-y-2">
@@ -185,20 +221,22 @@ export function ProfileSetupForm() {
             <Label htmlFor="name">Display Name</Label>
             <Input
               id="name"
-              {...form.register('name')}
+              {...form.register("name")}
               placeholder="How should we call you?"
               className="max-w-md"
             />
             {form.formState.errors.name && (
-              <p className="text-sm text-red-500">{form.formState.errors.name.message}</p>
+              <p className="text-sm text-red-500">
+                {form.formState.errors.name.message}
+              </p>
             )}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="language">Preferred Language</Label>
             <Select
-              onValueChange={(value) => form.setValue('language', value as any)}
-              defaultValue={form.getValues('language')}
+              onValueChange={(value) => form.setValue("language", value as any)}
+              defaultValue={form.getValues("language")}
             >
               <SelectTrigger className="max-w-md">
                 <SelectValue placeholder="Select language" />
@@ -215,8 +253,8 @@ export function ProfileSetupForm() {
           <div className="space-y-2">
             <Label htmlFor="theme">Display Theme</Label>
             <Select
-              onValueChange={(value) => form.setValue('theme', value as any)}
-              defaultValue={form.getValues('theme')}
+              onValueChange={(value) => form.setValue("theme", value as any)}
+              defaultValue={form.getValues("theme")}
             >
               <SelectTrigger className="max-w-md">
                 <SelectValue placeholder="Select theme" />
@@ -232,17 +270,159 @@ export function ProfileSetupForm() {
           <div className="space-y-2">
             <Label>Your Timezone</Label>
             <Input
-              value={form.getValues('timezone')}
+              value={form.getValues("timezone")}
               disabled
-              className="bg-muted max-w-md"
+              className="max-w-md bg-muted"
             />
-            <p className="text-sm text-muted-foreground">Automatically detected from your browser</p>
+            <p className="text-sm text-muted-foreground">
+              Automatically detected from your browser
+            </p>
+          </div>
+
+          {/* Work Schedule Section */}
+          <div className="space-y-4 rounded-lg border p-4">
+            <h3 className="text-lg font-medium">Work Schedule</h3>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="workStartTime">Work Start Time</Label>
+                <Input
+                  id="workStartTime"
+                  type="time"
+                  {...form.register("workStartTime")}
+                  className="max-w-md"
+                />
+                {form.formState.errors.workStartTime && (
+                  <p className="text-sm text-red-500">
+                    {form.formState.errors.workStartTime.message}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="workEndTime">Work End Time</Label>
+                <Input
+                  id="workEndTime"
+                  type="time"
+                  {...form.register("workEndTime")}
+                  className="max-w-md"
+                />
+                {form.formState.errors.workEndTime && (
+                  <p className="text-sm text-red-500">
+                    {form.formState.errors.workEndTime.message}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lunchStartTime">Lunch Start Time</Label>
+                <Input
+                  id="lunchStartTime"
+                  type="time"
+                  {...form.register("lunchStartTime")}
+                  className="max-w-md"
+                />
+                {form.formState.errors.lunchStartTime && (
+                  <p className="text-sm text-red-500">
+                    {form.formState.errors.lunchStartTime.message}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lunchDuration">Lunch Duration (minutes)</Label>
+                <Input
+                  id="lunchDuration"
+                  type="number"
+                  min="15"
+                  max="120"
+                  {...form.register("lunchDuration", { valueAsNumber: true })}
+                  className="max-w-md"
+                />
+                {form.formState.errors.lunchDuration && (
+                  <p className="text-sm text-red-500">
+                    {form.formState.errors.lunchDuration.message}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Break Preferences Section */}
+          <div className="space-y-4 rounded-lg border p-4">
+            <h3 className="text-lg font-medium">Break Preferences</h3>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="breakDuration">Short Break Duration (minutes)</Label>
+                <Input
+                  id="breakDuration"
+                  type="number"
+                  min="5"
+                  max="30"
+                  {...form.register("breakDuration", { valueAsNumber: true })}
+                  className="max-w-md"
+                />
+                {form.formState.errors.breakDuration && (
+                  <p className="text-sm text-red-500">
+                    {form.formState.errors.breakDuration.message}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="longBreakDuration">Long Break Duration (minutes)</Label>
+                <Input
+                  id="longBreakDuration"
+                  type="number"
+                  min="15"
+                  max="60"
+                  {...form.register("longBreakDuration", { valueAsNumber: true })}
+                  className="max-w-md"
+                />
+                {form.formState.errors.longBreakDuration && (
+                  <p className="text-sm text-red-500">
+                    {form.formState.errors.longBreakDuration.message}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="pomodoroDuration">Focus Session Duration (minutes)</Label>
+                <Input
+                  id="pomodoroDuration"
+                  type="number"
+                  min="15"
+                  max="60"
+                  {...form.register("pomodoroDuration", { valueAsNumber: true })}
+                  className="max-w-md"
+                />
+                {form.formState.errors.pomodoroDuration && (
+                  <p className="text-sm text-red-500">
+                    {form.formState.errors.pomodoroDuration.message}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="shortBreakInterval">
+                  Sessions Before Long Break
+                </Label>
+                <Input
+                  id="shortBreakInterval"
+                  type="number"
+                  min="1"
+                  max="6"
+                  {...form.register("shortBreakInterval", { valueAsNumber: true })}
+                  className="max-w-md"
+                />
+                {form.formState.errors.shortBreakInterval && (
+                  <p className="text-sm text-red-500">
+                    {form.formState.errors.shortBreakInterval.message}
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
 
           <div className="space-y-2">
             <Label>Profile Completion</Label>
             <Progress value={progress} className="w-full" />
-            <p className="text-sm text-muted-foreground">{Math.round(progress)}% complete</p>
+            <p className="text-sm text-muted-foreground">
+              {Math.round(progress)}% complete
+            </p>
           </div>
 
           {error && (
@@ -258,22 +438,24 @@ export function ProfileSetupForm() {
           )}
 
           <div className="flex gap-4 pt-4">
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="min-w-[120px]"
-              disabled={!form.formState.isDirty || !form.formState.isValid || isSaving}
+              disabled={
+                !form.formState.isDirty || !form.formState.isValid || isSaving
+              }
             >
               {isSaving ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white" />
                   Saving...
                 </>
               ) : (
-                'Save Changes'
+                "Save Changes"
               )}
             </Button>
-            <Button 
-              type="button" 
+            <Button
+              type="button"
               variant="outline"
               className="min-w-[120px]"
               onClick={handleCancel}
@@ -285,5 +467,5 @@ export function ProfileSetupForm() {
         </form>
       </CardContent>
     </Card>
-  )
+  );
 }
