@@ -152,7 +152,7 @@ export function ItemCard({ item: initialItem, projects, contexts }: ItemCardProp
                 <CalendarDays className="h-3 w-3" />
                 {differenceInDays(new Date(), new Date(createdAt))} days ago
               </span>
-              {projectId && (
+              {project?.title && (
                 <span className="flex items-center gap-1">
                   <Folder className="h-3 w-3" />
                   {project?.title}

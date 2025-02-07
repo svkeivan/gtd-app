@@ -16,7 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Item, Project } from "@prisma/client";
+import { getContexts } from "@/actions/contexts";
+import { getProjects } from "@/actions/projects";
+import { Context, Item, Project } from "@prisma/client";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { InboxForm } from "../../inbox/inbox-form";
@@ -40,6 +42,8 @@ export default function ProjectPage() {
     description: null,
     parentId: null,
   });
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [contexts, setContexts] = useState<Context[]>([]);
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -57,6 +61,24 @@ export default function ProjectPage() {
 
     fetchItems();
   }, [params.id]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [projectsData, contextsData] = await Promise.all([
+          getProjects(),
+          getContexts(),
+        ]);
+
+        setProjects(projectsData);
+        setContexts(contextsData);
+      } catch (error) {
+        console.error("Failed to load projects and contexts:", error);
+      }
+    };
+
+    loadData();
+  }, []);
 
   return (
     <div>
@@ -241,7 +263,12 @@ export default function ProjectPage() {
                 }
               })
               .map((item) => (
-                <ItemCard item={item} key={item.id} />
+                <ItemCard
+                  item={item}
+                  key={item.id}
+                  projects={projects}
+                  contexts={contexts}
+                />
               ))}
           </div>
         )}
