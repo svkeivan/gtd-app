@@ -1,7 +1,8 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import { getNextItems, updateItemPlanning } from "@/actions/items";
+import { scheduleUnplannedTasks } from "@/actions/schedule";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -9,6 +10,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useToast } from "@/components/ui/use-toast";
+import { Loader2 } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
 import {
@@ -71,8 +74,6 @@ interface Task {
   status: string;
 }
 
-
-
 interface CalendarViewProps {
   initialEvents: CalendarEvent[];
 }
@@ -81,6 +82,8 @@ export function CalendarView({ initialEvents }: CalendarViewProps) {
   const [events, setEvents] = useState<CalendarEvent[]>(initialEvents);
   const [selectedSlot, setSelectedSlot] = useState<SlotInfo | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [isScheduling, setIsScheduling] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     // Fetch available tasks when dialog opens
@@ -199,9 +202,69 @@ export function CalendarView({ initialEvents }: CalendarViewProps) {
       console.error("Error updating task:", error);
     }
   };
+  const handleSmartSchedule = async () => {
+    if (isScheduling) return;
+
+    setIsScheduling(true);
+    try {
+      const today = new Date();
+      const scheduledTasks = await scheduleUnplannedTasks(
+        // Since this is client component, we'll get userId from the URL or context
+        window.location.pathname.split("/")[2],
+        today,
+      );
+
+      // Add newly scheduled tasks to calendar
+      const newEvents = scheduledTasks.map(
+        (task): CalendarEvent => ({
+          id: task.taskId,
+          title:
+            tasks.find((t) => t.id === task.taskId)?.title || "Scheduled Task",
+          start: task.plannedDate,
+          end: new Date(task.plannedDate.getTime() + task.estimated * 60000),
+          isTask: true,
+          itemId: task.taskId,
+          estimated: task.estimated,
+        }),
+      );
+
+      setEvents([...events, ...newEvents]);
+
+      toast({
+        title: "Tasks Scheduled",
+        description: `Successfully scheduled ${scheduledTasks.length} tasks`,
+        variant: "default",
+      });
+    } catch (error) {
+      console.error("Error in smart scheduling:", error);
+      toast({
+        title: "Scheduling Failed",
+        description: "There was an error scheduling your tasks",
+        variant: "destructive",
+      });
+    } finally {
+      setIsScheduling(false);
+    }
+  };
 
   return (
     <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button
+          onClick={handleSmartSchedule}
+          className="bg-green-500 text-white hover:bg-green-600"
+          disabled={isScheduling}
+        >
+          {isScheduling ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Scheduling...
+            </>
+          ) : (
+            "Smart Schedule Tasks"
+          )}
+        </Button>
+      </div>
       <Dialog open={!!selectedSlot} onOpenChange={() => setSelectedSlot(null)}>
         <DialogContent>
           <DialogHeader>
