@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { format } from "date-fns";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,9 +29,14 @@ const CATEGORIES = [
 
 type Category = typeof CATEGORIES[number];
 
-export function TimeEntryForm() {
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
+interface TimeEntryFormProps {
+  defaultStartTime?: Date | null;
+  defaultEndTime?: Date | null;
+}
+
+export function TimeEntryForm({ defaultStartTime, defaultEndTime }: TimeEntryFormProps) {
+  const [startTime, setStartTime] = useState(defaultStartTime ? format(defaultStartTime, "yyyy-MM-dd'T'HH:mm") : "");
+  const [endTime, setEndTime] = useState(defaultEndTime ? format(defaultEndTime, "yyyy-MM-dd'T'HH:mm") : "");
   const [category, setCategory] = useState<Category | "">("");
   const [note, setNote] = useState("");
   const [itemId, setItemId] = useState<string>("");
@@ -136,23 +142,11 @@ export function TimeEntryForm() {
             </SelectContent>
           </Select>
         </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="item">Next Action Item (Optional)</Label>
-          <Select value={itemId} onValueChange={setItemId}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select an item to track time for" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">None</SelectItem>
-              {nextActionItems.map((item) => (
-                <SelectItem key={item.id} value={item.id}>
-                  {item.title}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <NextActionItemSelector
+          itemId={itemId}
+          setItemId={setItemId}
+          nextActionItems={nextActionItems}
+        />
 
         <div className="space-y-2">
           <Label htmlFor="note">Notes</Label>
@@ -170,5 +164,32 @@ export function TimeEntryForm() {
         </Button>
       </form>
     </Card>
+  );
+}
+
+interface NextActionItemSelectorProps {
+  itemId: string;
+  setItemId: (itemId: string) => void;
+  nextActionItems: NextActionItem[];
+}
+
+function NextActionItemSelector({ itemId, setItemId, nextActionItems }: NextActionItemSelectorProps) {
+  return (
+    <div className="space-y-2">
+      <Label htmlFor="item">Next Action Item (Optional)</Label>
+      <Select value={itemId} onValueChange={setItemId}>
+        <SelectTrigger>
+          <SelectValue placeholder="Select an item to track time for" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="none">None</SelectItem>
+          {nextActionItems.map((item) => (
+            <SelectItem key={item.id} value={item.id}>
+              {item.title}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }

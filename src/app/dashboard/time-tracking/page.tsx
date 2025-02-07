@@ -23,6 +23,11 @@ function LoadingCard() {
 
 export default function TimeTrackingPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [refreshTimeline, setRefreshTimeline] = useState(0);
+
+  const handleTimeEntryCreated = () => {
+    setRefreshTimeline(prev => prev + 1);
+  };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -41,10 +46,10 @@ export default function TimeTrackingPage() {
           <TabsTrigger value="timeline">Timeline</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="timeline" className="space-y-4">
           <Suspense fallback={<LoadingCard />}>
-            <TimelineView />
+            <TimelineView key={refreshTimeline} />
           </Suspense>
         </TabsContent>
         
@@ -55,11 +60,12 @@ export default function TimeTrackingPage() {
         </TabsContent>
       </Tabs>
 
-      <TimeEntryDialog 
+      <TimeEntryDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         defaultDate={new Date()}
         defaultStartTime={new Date()}
+        onTimeEntryCreated={handleTimeEntryCreated}
       />
     </div>
   );

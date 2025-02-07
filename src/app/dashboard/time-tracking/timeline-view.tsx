@@ -67,19 +67,7 @@ export function TimelineView() {
   }, [selectedDate]);
 
   // Scroll to current time on initial load and when date changes
-  useEffect(() => {
-    if (!isLoading && scrollAreaRef.current && currentTimeRef.current) {
-      const now = new Date();
-      if (
-        selectedDate.getDate() === now.getDate() &&
-        selectedDate.getMonth() === now.getMonth() &&
-        selectedDate.getFullYear() === now.getFullYear()
-      ) {
-        const scrollPosition = currentTimeRef.current.offsetTop - 200;
-        scrollAreaRef.current.scrollTop = scrollPosition;
-      }
-    }
-  }, [isLoading, selectedDate]);
+
 
   const getCategoryColor = (category: string | null) => {
     const colors: Record<string, string> = {
@@ -170,6 +158,19 @@ export function TimelineView() {
           <div className="space-y-2">
             {timeBlocks.map((block, index) => {
               const isCurrentTime = isCurrentTimeBlock(block);
+              const now = new Date();
+              const isToday =
+                selectedDate.getDate() === now.getDate() &&
+                selectedDate.getMonth() === now.getMonth() &&
+                selectedDate.getFullYear() === now.getFullYear();
+              if (isCurrentTime && isToday) {
+                queueMicrotask(() => {
+                  if (currentTimeRef.current && scrollAreaRef.current) {
+                    const scrollPosition = currentTimeRef.current.offsetTop - 200;
+                    scrollAreaRef.current.scrollTop = scrollPosition;
+                  }
+                });
+              }
               return (
                 <div key={index}>
                   {isCurrentTime && (

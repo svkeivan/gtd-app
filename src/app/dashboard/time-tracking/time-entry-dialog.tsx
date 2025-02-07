@@ -1,19 +1,33 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Calendar } from "@/components/ui/calendar";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { createTimeEntry } from "@/actions/time-entries";
-import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import { CreateTimeEntryData } from "@/types/time-entry-types";
 import { format, set } from "date-fns";
-import { cn } from "@/lib/utils";
 import { Clock } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { TimeEntryForm } from "./time-entry-form";
 
 const CATEGORIES = [
   "Work",
@@ -22,10 +36,10 @@ const CATEGORIES = [
   "Exercise",
   "Personal",
   "Break",
-  "Other"
+  "Other",
 ] as const;
 
-type Category = typeof CATEGORIES[number];
+type Category = (typeof CATEGORIES)[number];
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const MINUTES = ["00", "15", "30", "45"];
@@ -40,6 +54,7 @@ interface TimeEntryDialogProps {
   onOpenChange: (open: boolean) => void;
   defaultDate?: Date;
   defaultStartTime?: Date | null;
+  onTimeEntryCreated?: () => void;
 }
 
 function TimePicker({ date, onChange }: TimePickerProps) {
@@ -50,7 +65,7 @@ function TimePicker({ date, onChange }: TimePickerProps) {
           variant="outline"
           className={cn(
             "w-[280px] justify-start text-left font-normal",
-            !date && "text-muted-foreground"
+            !date && "text-muted-foreground",
           )}
         >
           <Clock className="mr-2 h-4 w-4" />
@@ -68,7 +83,7 @@ function TimePicker({ date, onChange }: TimePickerProps) {
                   set(date, {
                     hours: parseInt(hour),
                     minutes: date.getMinutes(),
-                  })
+                  }),
                 );
               }}
             >
@@ -77,7 +92,10 @@ function TimePicker({ date, onChange }: TimePickerProps) {
               </SelectTrigger>
               <SelectContent position="popper">
                 {HOURS.map((hour) => (
-                  <SelectItem key={hour} value={hour.toString().padStart(2, "0")}>
+                  <SelectItem
+                    key={hour}
+                    value={hour.toString().padStart(2, "0")}
+                  >
                     {hour.toString().padStart(2, "0")}
                   </SelectItem>
                 ))}
@@ -93,7 +111,7 @@ function TimePicker({ date, onChange }: TimePickerProps) {
                   set(date, {
                     hours: date.getHours(),
                     minutes: parseInt(minute),
-                  })
+                  }),
                 );
               }}
             >
@@ -115,10 +133,22 @@ function TimePicker({ date, onChange }: TimePickerProps) {
   );
 }
 
-export function TimeEntryDialog({ open, onOpenChange, defaultDate, defaultStartTime }: TimeEntryDialogProps) {
+export function TimeEntryDialog({
+  open,
+  onOpenChange,
+  defaultDate,
+  defaultStartTime,
+  onTimeEntryCreated,
+}: TimeEntryDialogProps) {
   const [date, setDate] = useState<Date>(defaultDate || new Date());
-  const [startTime, setStartTime] = useState<Date>(defaultStartTime || new Date());
-  const [endTime, setEndTime] = useState<Date>(defaultStartTime ? new Date(defaultStartTime.getTime() + 30 * 60000) : new Date());
+  const [startTime, setStartTime] = useState<Date>(
+    defaultStartTime || new Date(),
+  );
+  const [endTime, setEndTime] = useState<Date>(
+    defaultStartTime
+      ? new Date(defaultStartTime.getTime() + 30 * 60000)
+      : new Date(),
+  );
   const [category, setCategory] = useState<Category | "">("");
   const [note, setNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -160,11 +190,12 @@ export function TimeEntryDialog({ open, onOpenChange, defaultDate, defaultStartT
 
       await createTimeEntry(timeEntryData);
       toast.success("Time entry saved successfully");
-      
+
       // Reset form and close dialog
       setCategory("");
       setNote("");
       onOpenChange(false);
+      onTimeEntryCreated?.();
     } catch (error) {
       console.error("Error saving time entry:", error);
       toast.error("Failed to save time entry");
@@ -179,61 +210,10 @@ export function TimeEntryDialog({ open, onOpenChange, defaultDate, defaultStartT
         <DialogHeader>
           <DialogTitle>Log Time Entry</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label>Date</Label>
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={(date) => date && setDate(date)}
-              className="rounded-md border"
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <Label>Start Time</Label>
-            <TimePicker date={startTime} onChange={setStartTime} />
-          </div>
-
-          <div className="grid gap-2">
-            <Label>End Time</Label>
-            <TimePicker date={endTime} onChange={setEndTime} />
-          </div>
-
-          <div className="grid gap-2">
-            <Label>Category</Label>
-            <Select value={category} onValueChange={(value: Category) => setCategory(value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a category" />
-              </SelectTrigger>
-              <SelectContent>
-                {CATEGORIES.map((cat) => (
-                  <SelectItem key={cat} value={cat}>
-                    {cat}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="grid gap-2">
-            <Label>Notes</Label>
-            <Textarea
-              placeholder="What did you work on?"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              className="h-20"
-            />
-          </div>
-        </div>
-        <div className="flex justify-end gap-3">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting}>
-            {isSubmitting ? "Saving..." : "Save Entry"}
-          </Button>
-        </div>
+        <TimeEntryForm
+          defaultStartTime={startTime}
+          defaultEndTime={endTime}
+        />
       </DialogContent>
     </Dialog>
   );
