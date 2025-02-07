@@ -25,7 +25,6 @@ import { mutate } from "swr";
 
 interface TimeBlockComponentProps {
   block: TimeBlock;
-  index: number;
   handleTimeBlockClick: (startTime: Date) => void;
   currentTimeRef: RefObject<HTMLDivElement | null>;
   selectedDate: Date;
@@ -52,9 +51,7 @@ const isCurrentTimeBlock = (block: TimeBlock) => {
 
 export function TimeBlockComponent({
   block,
-  index,
   handleTimeBlockClick,
-  currentTimeRef,
   selectedDate,
   style,
   onEditEntry,
@@ -111,9 +108,9 @@ export function TimeBlockComponent({
           <TooltipTrigger asChild>
             <div
               className={cn(
-                "group relative rounded-lg transition-all duration-200",
+                "group relative rounded-lg transition-all duration-200 flex items-start",
                 "hover:bg-accent/5 dark:hover:bg-accent/10",
-                isCurrentTime && isToday && "bg-blue-50/50 dark:bg-blue-900/10"
+                isCurrentTime && isToday && "bg-blue-50/80 dark:bg-blue-900/10"
               )}
               onClick={() => handleTimeBlockClick(block.startTime)}
               role="button"
@@ -126,7 +123,7 @@ export function TimeBlockComponent({
               }}
             >
               {/* Time label */}
-              <div className="absolute -left-14 top-0 text-xs text-muted-foreground select-none">
+              <div className="py-2 px-2 text-xs text-muted-foreground select-none">
                 {format(block.startTime, "HH:mm")}
               </div>
 
@@ -135,7 +132,7 @@ export function TimeBlockComponent({
                 variant="ghost"
                 size="icon"
                 className={cn(
-                  "absolute -right-10 top-1/2 -translate-y-1/2 opacity-0",
+                  "absolute -right-10 top-4 -translate-y-1/2 opacity-0",
                   "group-hover:opacity-100 transition-opacity"
                 )}
                 onClick={(e) => {
@@ -148,7 +145,7 @@ export function TimeBlockComponent({
 
               {/* Time entries */}
               {block.entries.length > 0 ? (
-                <div className="space-y-1 p-2">
+                <div className="space-y-1 py-2 flex-1">
                   {block.entries.map((entry) => (
                     <div
                       key={entry.id}
@@ -217,7 +214,7 @@ export function TimeBlockComponent({
               ) : (
                 <div
                   className={cn(
-                    "h-8 m-2 rounded-md",
+                    "h-8 my-2 rounded-md flex-1",
                     "border border-dashed border-muted-foreground/20",
                     "dark:border-muted-foreground/10",
                     "transition-all duration-200",

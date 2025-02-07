@@ -1,3 +1,4 @@
+"use client"
 import { FocusTimer } from "../components/timer/focus-timer";
 import { TimerSettings } from "../components/timer/timer-settings";
 

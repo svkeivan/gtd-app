@@ -4,6 +4,9 @@ import { TimerDisplay } from "./timer-display";
 import { TimerControls } from "./timer-controls";
 import { useTimerStore } from "./timer-state";
 import { cn } from "@/lib/utils";
+import { TaskSuggestions } from "./task-suggestions";
+import { Button } from "@/components/ui/button";
+import { CheckCircle } from "lucide-react";
 
 interface FocusTimerProps {
   className?: string;
@@ -20,7 +23,10 @@ export function FocusTimer({ className }: FocusTimerProps) {
     skipTimer,
     tick,
     adjustTime,
-    sessionsCompleted
+    sessionsCompleted,
+    selectedTask,
+    setSelectedTask,
+    finishSession
   } = useTimerStore();
 
   // Handle timer ticks
@@ -60,6 +66,11 @@ export function FocusTimer({ className }: FocusTimerProps) {
     longBreak: 'bg-purple-50 dark:bg-purple-950/30'
   };
 
+  const handleFinish = async () => {
+    await finishSession();
+    resetTimer();
+  };
+
   return (
     <Card className={cn("p-6", modeBackgrounds[mode], className)}>
       <div className="flex flex-col items-center space-y-6">
@@ -78,6 +89,33 @@ export function FocusTimer({ className }: FocusTimerProps) {
           onSkip={skipTimer}
           onAdjustTime={adjustTime}
         />
+
+        {mode === 'focus' && (
+          <>
+            <div className="w-full">
+              <TaskSuggestions
+                onSelectTask={setSelectedTask}
+                selectedTaskId={selectedTask?.id || null}
+              />
+            </div>
+
+            {isActive && (
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={handleFinish}
+              >
+                <CheckCircle className="mr-2 h-4 w-4" />
+                Finish Session
+                {selectedTask && (
+                  <span className="ml-2 text-muted-foreground">
+                    ({selectedTask.title})
+                  </span>
+                )}
+              </Button>
+            )}
+          </>
+        )}
         
         <div className="text-sm text-muted-foreground">
           Sessions completed: {sessionsCompleted}

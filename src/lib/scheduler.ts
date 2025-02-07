@@ -101,7 +101,7 @@ export class SmartScheduler {
   private addMinutesToTime(time: string, minutes: number): string {
     const [hours, mins] = time.split(':').map(Number);
     const totalMinutes = hours * 60 + mins + minutes;
-    const newHours = Math.floor(totalMinutes / 60);
+    const newHours = Math.floor(totalMinutes / 60) % 24;
     const newMinutes = totalMinutes % 60;
     return `${String(newHours).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}`;
   }
@@ -111,20 +111,35 @@ export class SmartScheduler {
     let currentTime = new Date(date);
     currentTime.setHours(parseInt(this.workStartTime.split(':')[0], 10));
     currentTime.setMinutes(parseInt(this.workStartTime.split(':')[1], 10));
+    currentTime.setSeconds(0);
+    currentTime.setMilliseconds(0);
 
     const endTime = new Date(date);
     endTime.setHours(parseInt(this.workEndTime.split(':')[0], 10));
     endTime.setMinutes(parseInt(this.workEndTime.split(':')[1], 10));
+    endTime.setSeconds(0);
+    endTime.setMilliseconds(0);
 
     let focusSessionCount = 0;
     let lastContextId: string | undefined;
     let consecutiveWorkTime = 0;
 
     while (currentTime < endTime) {
+      if (!this.isWorkingHours(currentTime)) {
+        currentTime = new Date(currentTime.getTime() + 60000);
+        continue;
+      }
+
       // Skip lunch break
       if (this.isLunchTime(currentTime)) {
+        const lunchSlot: ScheduleSlot = {
+          start: new Date(currentTime),
+          end: new Date(currentTime.getTime() + this.lunchDuration * 60000),
+          isFocusTime: false,
+          isBreak: true
+        };
+        slots.push(lunchSlot);
         currentTime = new Date(currentTime.getTime() + this.lunchDuration * 60000);
-        // Reset counters after lunch
         focusSessionCount = 0;
         consecutiveWorkTime = 0;
         continue;
@@ -204,20 +219,36 @@ export class SmartScheduler {
     const graph = this.buildDependencyGraph(tasks);
     const visited = new Set<string>();
     const sorted: ScheduleTask[] = [];
+    const temp = new Set<string>();
 
-    function visit(taskId: string) {
-      if (visited.has(taskId)) return;
-      visited.add(taskId);
+    function visit(taskId: string): boolean {
+      if (temp.has(taskId)) {
+        throw new Error("Circular dependency detected");
+      }
+      if (visited.has(taskId)) return false;
 
+      temp.add(taskId);
       const dependencies = graph.get(taskId) || new Set();
       dependencies.forEach(depId => visit(depId));
+      temp.delete(taskId);
 
+      visited.add(taskId);
       const task = tasks.find(t => t.id === taskId);
       if (task) sorted.push(task);
+      return true;
     }
 
-    tasks.forEach(task => visit(task.id));
-    return sorted.reverse();
+    try {
+      tasks.forEach(task => {
+        if (!visited.has(task.id)) {
+          visit(task.id);
+        }
+      });
+      return sorted.reverse();
+    } catch (error) {
+      console.error("Error in topological sort:", error);
+      return tasks;
+    }
   }
 
   private prioritizeTasks(tasks: ScheduleTask[]): ScheduleTask[] {
@@ -324,6 +355,9 @@ export class SmartScheduler {
       let bestScore = -Infinity;
 
       for (const slot of slots) {
+        // Skip if slot is already fully used
+        if (slot.start >= slot.end) continue;
+
         // Skip if slot duration doesn't match task requirements
         const slotDuration = (slot.end.getTime() - slot.start.getTime()) / 60000;
         if (slotDuration < taskDuration) continue;
@@ -331,11 +365,14 @@ export class SmartScheduler {
         // Skip if focus requirements don't match
         if (requiresFocus && !slot.isFocusTime) continue;
 
+        // Skip if slot is a break
+        if (slot.isBreak) continue;
+
         // Skip if no matching context is available
         const availableContexts = task.contexts.filter(
           context => this.isContextAvailable(context, slot.start)
         );
-        if (availableContexts.length === 0) continue;
+        if (task.contexts.length > 0 && availableContexts.length === 0) continue;
 
         // Calculate slot score based on various factors
         let score = 0;
@@ -348,12 +385,12 @@ export class SmartScheduler {
 
         // Penalize context switches
         if (!matchingContext && currentContextId) {
-          score -= 5;
+          score -= this.contextSwitchPenalty;
         }
 
         // Prefer earlier slots for higher priority tasks
         const hoursSinceStart = (slot.start.getTime() - date.getTime()) / (1000 * 60 * 60);
-        score -= hoursSinceStart * (task.priority === 'URGENT' ? 2 : 1);
+        score -= hoursSinceStart * (task.priority === PriorityLevel.URGENT ? 2 : 1);
 
         if (score > bestScore) {
           bestScore = score;
@@ -365,7 +402,7 @@ export class SmartScheduler {
         // Schedule task in best slot
         scheduledTasks.push({
           taskId: task.id,
-          plannedDate: bestSlot.start,
+          plannedDate: new Date(bestSlot.start),
           estimated: taskDuration
         });
 
