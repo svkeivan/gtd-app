@@ -1,136 +1,28 @@
 "use client";
 
-import { createTimeEntry } from "@/actions/time-entries";
+import { createTimeEntry, updateTimeEntry } from "@/actions/time-entries";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { cn } from "@/lib/utils";
-import { CreateTimeEntryData } from "@/types/time-entry-types";
-import { format, set } from "date-fns";
-import { Clock } from "lucide-react";
-import { useEffect, useState } from "react";
+import { CreateTimeEntryData, TimeEntry } from "@/types/time-entry-types";
 import { toast } from "sonner";
+import { useState } from "react";
 import { TimeEntryForm } from "./time-entry-form";
-
-const CATEGORIES = [
-  "Work",
-  "Meeting",
-  "Learning",
-  "Exercise",
-  "Personal",
-  "Break",
-  "Other",
-] as const;
-
-type Category = (typeof CATEGORIES)[number];
-
-const HOURS = Array.from({ length: 24 }, (_, i) => i);
-const MINUTES = ["00", "15", "30", "45"];
-
-interface TimePickerProps {
-  date: Date;
-  onChange: (date: Date) => void;
-}
+import { mutate } from "swr";
+import { format } from "date-fns";
 
 interface TimeEntryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   defaultDate?: Date;
-  defaultStartTime?: Date | null;
+  defaultStartTime?: Date;
   onTimeEntryCreated?: () => void;
-}
-
-function TimePicker({ date, onChange }: TimePickerProps) {
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          className={cn(
-            "w-[280px] justify-start text-left font-normal",
-            !date && "text-muted-foreground",
-          )}
-        >
-          <Clock className="mr-2 h-4 w-4" />
-          {date ? format(date, "HH:mm") : "Select time"}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
-        <div className="grid grid-cols-2 gap-2 p-4">
-          <div className="space-y-2">
-            <Label>Hour</Label>
-            <Select
-              value={format(date, "HH")}
-              onValueChange={(hour) => {
-                onChange(
-                  set(date, {
-                    hours: parseInt(hour),
-                    minutes: date.getMinutes(),
-                  }),
-                );
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Hour" />
-              </SelectTrigger>
-              <SelectContent position="popper">
-                {HOURS.map((hour) => (
-                  <SelectItem
-                    key={hour}
-                    value={hour.toString().padStart(2, "0")}
-                  >
-                    {hour.toString().padStart(2, "0")}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label>Minute</Label>
-            <Select
-              value={format(date, "mm")}
-              onValueChange={(minute) => {
-                onChange(
-                  set(date, {
-                    hours: date.getHours(),
-                    minutes: parseInt(minute),
-                  }),
-                );
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Minute" />
-              </SelectTrigger>
-              <SelectContent position="popper">
-                {MINUTES.map((minute) => (
-                  <SelectItem key={minute} value={minute}>
-                    {minute}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
+  editEntry?: TimeEntry;
 }
 
 export function TimeEntryDialog({
@@ -139,66 +31,104 @@ export function TimeEntryDialog({
   defaultDate,
   defaultStartTime,
   onTimeEntryCreated,
+  editEntry,
 }: TimeEntryDialogProps) {
-  const [date, setDate] = useState<Date>(defaultDate || new Date());
-  const [startTime, setStartTime] = useState<Date>(
-    defaultStartTime || new Date(),
-  );
-  const [endTime, setEndTime] = useState<Date>(
-    defaultStartTime
-      ? new Date(defaultStartTime.getTime() + 30 * 60000)
-      : new Date(),
-  );
-  const [category, setCategory] = useState<Category | "">("");
-  const [note, setNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Update times when defaultStartTime changes
-  useEffect(() => {
-    if (defaultStartTime) {
-      setStartTime(defaultStartTime);
-      setEndTime(new Date(defaultStartTime.getTime() + 30 * 60000));
-    }
-  }, [defaultStartTime]);
-
-  // Update date when defaultDate changes
-  useEffect(() => {
-    if (defaultDate) {
-      setDate(defaultDate);
-    }
-  }, [defaultDate]);
-
-  const handleSubmit = async () => {
-    if (!category) {
-      toast.error("Please select a category");
-      return;
-    }
-
-    if (endTime <= startTime) {
-      toast.error("End time must be after start time");
-      return;
-    }
-
+  const handleSubmit = async (data: CreateTimeEntryData) => {
     try {
       setIsSubmitting(true);
-      const timeEntryData: CreateTimeEntryData = {
-        startTime,
-        endTime,
-        category,
-        note: note || undefined,
+
+      // Ensure the date is set correctly
+      if (defaultDate) {
+        const startHours = data.startTime.getHours();
+        const startMinutes = data.startTime.getMinutes();
+        data.startTime = new Date(defaultDate);
+        data.startTime.setHours(startHours, startMinutes, 0, 0);
+        
+        const endHours = data.endTime.getHours();
+        const endMinutes = data.endTime.getMinutes();
+        data.endTime = new Date(defaultDate);
+        data.endTime.setHours(endHours, endMinutes, 0, 0);
+      }
+
+      // Calculate duration for optimistic update
+      const duration = Math.round(
+        (data.endTime.getTime() - data.startTime.getTime()) / (1000 * 60)
+      );
+
+      // Optimistically update the UI
+      const optimisticEntry = {
+        id: editEntry?.id || 'temp-' + Date.now(),
+        startTime: data.startTime,
+        endTime: data.endTime,
+        duration,
+        category: data.category,
+        note: data.note || null,
+        itemId: data.itemId || null,
+        userId: 'current-user', // Will be replaced with actual data
+        createdAt: editEntry?.createdAt || new Date(),
+        updatedAt: new Date(),
       };
 
-      await createTimeEntry(timeEntryData);
-      toast.success("Time entry saved successfully");
+      // Update all relevant SWR caches
+      mutate(
+        (key) => Array.isArray(key) && key[0] instanceof Date, // Matches time entries report key pattern
+        async (cachedData: any) => {
+          if (!cachedData) return cachedData;
+          const entries = editEntry
+            ? cachedData.entries.map((e: TimeEntry) => 
+                e.id === editEntry.id ? optimisticEntry : e
+              )
+            : [...(cachedData.entries || []), optimisticEntry];
+          return {
+            ...cachedData,
+            entries,
+          };
+        },
+        { revalidate: false }
+      );
 
-      // Reset form and close dialog
-      setCategory("");
-      setNote("");
+      // Create or update the entry
+      if (editEntry) {
+        await updateTimeEntry(editEntry.id, data);
+        toast.success("Time entry updated", {
+          description: (
+            <div className="text-sm">
+              <div>{data.category} - {format(data.startTime, "HH:mm")}</div>
+              {data.note && <div className="text-muted-foreground mt-1">{data.note}</div>}
+            </div>
+          ),
+        });
+      } else {
+        await createTimeEntry(data);
+        toast.success("Time entry saved", {
+          description: (
+            <div className="text-sm">
+              <div>{data.category} - {format(data.startTime, "HH:mm")}</div>
+              {data.note && <div className="text-muted-foreground mt-1">{data.note}</div>}
+            </div>
+          ),
+        });
+      }
+
+      // Close dialog and notify parent
       onOpenChange(false);
       onTimeEntryCreated?.();
+
+      // Revalidate all time entry related data
+      mutate(
+        (key) => Array.isArray(key) && key[0] instanceof Date
+      );
     } catch (error) {
       console.error("Error saving time entry:", error);
-      toast.error("Failed to save time entry");
+      const errorMessage = error instanceof Error ? error.message : "Failed to save time entry";
+      toast.error(errorMessage);
+
+      // Revalidate to ensure data consistency
+      mutate(
+        (key) => Array.isArray(key) && key[0] instanceof Date
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -208,11 +138,26 @@ export function TimeEntryDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Log Time Entry</DialogTitle>
+          <DialogTitle>{editEntry ? "Edit Time Entry" : "Log Time Entry"}</DialogTitle>
+          <DialogDescription>
+            {editEntry 
+              ? "Update the details of your time entry"
+              : "Record time spent on activities in minutes"
+            }
+          </DialogDescription>
         </DialogHeader>
         <TimeEntryForm
-          defaultStartTime={startTime}
-          defaultEndTime={endTime}
+          defaultDate={defaultDate}
+          defaultStartTime={editEntry?.startTime || defaultStartTime}
+          initialData={editEntry ? {
+            startTime: editEntry.startTime,
+            endTime: editEntry.endTime,
+            category: editEntry.category || undefined,
+            note: editEntry.note || undefined,
+            itemId: editEntry.itemId || undefined,
+          } : undefined}
+          onSubmit={handleSubmit}
+          isSubmitting={isSubmitting}
         />
       </DialogContent>
     </Dialog>

@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { CreateTimeEntryData, TimeEntry, TimeEntryReport } from "@/types/time-entry-types";
@@ -55,6 +55,65 @@ export async function createTimeEntry(data: CreateTimeEntryData): Promise<TimeEn
   return timeEntry as TimeEntry;
 }
 
+export async function updateTimeEntry(id: string, data: CreateTimeEntryData): Promise<TimeEntry> {
+  const { user } = await auth();
+  if (!user?.id || !user.isLoggedIn) {
+    throw new Error("You must be logged in to update time entries");
+  }
+
+  // Verify ownership
+  const existingEntry = await prisma.timeEntry.findUnique({
+    where: { id },
+    select: { userId: true },
+  });
+
+  if (!existingEntry || existingEntry.userId !== user.id) {
+    throw new Error("Time entry not found or unauthorized");
+  }
+
+  const duration = Math.round(
+    (data.endTime.getTime() - data.startTime.getTime()) / (1000 * 60)
+  );
+
+  const timeEntry = await prisma.timeEntry.update({
+    where: { id },
+    data: {
+      startTime: data.startTime,
+      endTime: data.endTime,
+      duration,
+      category: data.category,
+      note: data.note,
+      itemId: data.itemId,
+    },
+  });
+
+  revalidatePath("/dashboard/time-tracking");
+  return timeEntry as TimeEntry;
+}
+
+export async function deleteTimeEntry(id: string): Promise<void> {
+  const { user } = await auth();
+  if (!user?.id || !user.isLoggedIn) {
+    throw new Error("You must be logged in to delete time entries");
+  }
+
+  // Verify ownership
+  const existingEntry = await prisma.timeEntry.findUnique({
+    where: { id },
+    select: { userId: true },
+  });
+
+  if (!existingEntry || existingEntry.userId !== user.id) {
+    throw new Error("Time entry not found or unauthorized");
+  }
+
+  await prisma.timeEntry.delete({
+    where: { id },
+  });
+
+  revalidatePath("/dashboard/time-tracking");
+}
+
 export async function getTimeEntries(date: Date): Promise<TimeEntry[]> {
   const { user } = await auth();
   if (!user?.id) {
@@ -85,7 +144,8 @@ export async function getTimeEntries(date: Date): Promise<TimeEntry[]> {
 
 export async function getTimeEntriesReport(
   startDate: Date,
-  endDate: Date
+  endDate: Date,
+  tags: string[] = []
 ): Promise<TimeEntryReport> {
   const { user } = await auth();
   if (!user?.id) {

@@ -2,100 +2,107 @@
 
 import { useEffect, useState, useRef } from "react";
 import { Card } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
-import { format, addMinutes, startOfDay, endOfDay, isWithinInterval } from "date-fns";
+import { Timeline } from "./components/timeline";
 import { getTimeEntries } from "@/actions/time-entries";
 import { TimeBlock, TimeEntry } from "@/types/time-entry-types";
-import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
 import { TimeEntryDialog } from "./time-entry-dialog";
+import { startOfDay, endOfDay, addMinutes } from "date-fns";
+import { RefObject } from "react";
+import useSWR, { mutate } from "swr";
+
+const fetcher = async (date: Date) => {
+  return getTimeEntries(date);
+};
 
 export function TimelineView() {
-  const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [isLoading, setIsLoading] = useState(true);
-  const [calendarOpen, setCalendarOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedTime, setSelectedTime] = useState<Date | null>(null);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const currentTimeRef = useRef<HTMLDivElement>(null);
+  const [selectedTime, setSelectedTime] = useState<Date | undefined>(undefined);
+  const [editEntry, setEditEntry] = useState<TimeEntry | undefined>(undefined);
+  const scrollAreaRef: RefObject<HTMLDivElement | null> = useRef(null);
+  const currentTimeRef: RefObject<HTMLDivElement | null> = useRef(null);
 
-  useEffect(() => {
-    async function loadTimeEntries() {
-      try {
-        setIsLoading(true);
-        const entries = await getTimeEntries(selectedDate);
-        
-        // Generate time blocks for the day
-        const blocks: TimeBlock[] = [];
-        let currentTime = startOfDay(selectedDate);
-        const dayEnd = endOfDay(selectedDate);
+  // Fetch time entries with SWR for real-time updates
+  const { data: entries, isLoading } = useSWR(
+    selectedDate,
+    fetcher,
+    {
+      refreshInterval: 30000, // Refresh every 30 seconds
+      revalidateOnFocus: true,
+    }
+  );
 
-        while (currentTime < dayEnd) {
-          const blockEnd = addMinutes(currentTime, 30);
-          const blockEntries = entries.filter(entry => {
-            const entryStart = new Date(entry.startTime);
-            const entryEnd = entry.endTime ? new Date(entry.endTime) : entryStart;
-            return (
-              (entryStart >= currentTime && entryStart < blockEnd) ||
-              (entryEnd > currentTime && entryEnd <= blockEnd) ||
-              (entryStart <= currentTime && entryEnd >= blockEnd)
-            );
-          });
+  // Generate time blocks
+  const timeBlocks: TimeBlock[] = (() => {
+    if (!entries) return [];
 
-          blocks.push({
-            startTime: currentTime,
-            endTime: blockEnd,
-            entries: blockEntries,
-          });
-          currentTime = blockEnd;
-        }
+    const blocks: TimeBlock[] = [];
+    let currentTime = startOfDay(selectedDate);
+    const dayEnd = endOfDay(selectedDate);
 
-        setTimeBlocks(blocks);
-      } catch (error) {
-        console.error("Error loading time entries:", error);
-      } finally {
-        setIsLoading(false);
-      }
+    while (currentTime < dayEnd) {
+      const blockEnd = addMinutes(currentTime, 30);
+      const blockEntries = entries.filter(entry => {
+        const entryStart = new Date(entry.startTime);
+        const entryEnd = entry.endTime ? new Date(entry.endTime) : entryStart;
+        return (
+          (entryStart >= currentTime && entryStart < blockEnd) ||
+          (entryEnd > currentTime && entryEnd <= blockEnd) ||
+          (entryStart <= currentTime && entryEnd >= blockEnd)
+        );
+      });
+
+      blocks.push({
+        startTime: currentTime,
+        endTime: blockEnd,
+        entries: blockEntries,
+      });
+      currentTime = blockEnd;
     }
 
-    loadTimeEntries();
-  }, [selectedDate]);
-
-  // Scroll to current time on initial load and when date changes
-
-
-  const getCategoryColor = (category: string | null) => {
-    const colors: Record<string, string> = {
-      Work: "bg-blue-500 dark:bg-blue-600",
-      Meeting: "bg-purple-500 dark:bg-purple-600",
-      Learning: "bg-green-500 dark:bg-green-600",
-      Exercise: "bg-yellow-500 dark:bg-yellow-600",
-      Personal: "bg-pink-500 dark:bg-pink-600",
-      Break: "bg-gray-500 dark:bg-gray-600",
-    };
-    return colors[category || ""] || "bg-slate-500 dark:bg-slate-600";
-  };
-
-  const navigateDate = (direction: "prev" | "next") => {
-    const newDate = new Date(selectedDate);
-    newDate.setDate(selectedDate.getDate() + (direction === "next" ? 1 : -1));
-    setSelectedDate(newDate);
-  };
+    return blocks;
+  })();
 
   const handleTimeBlockClick = (startTime: Date) => {
     setSelectedTime(startTime);
+    setEditEntry(undefined);
     setDialogOpen(true);
   };
 
-  const isCurrentTimeBlock = (block: TimeBlock) => {
-    const now = new Date();
-    return isWithinInterval(now, { start: block.startTime, end: block.endTime });
+  const handleEditEntry = (entry: TimeEntry) => {
+    setEditEntry(entry);
+    setSelectedTime(undefined);
+    setDialogOpen(true);
   };
+
+  const handleDialogClose = (open: boolean) => {
+    setDialogOpen(open);
+    if (!open) {
+      setEditEntry(undefined);
+      setSelectedTime(undefined);
+    }
+  };
+
+  const handleTimeEntryCreated = () => {
+    // Revalidate data
+    mutate(selectedDate);
+  };
+
+  // Scroll to current time on initial load
+  useEffect(() => {
+    if (currentTimeRef.current && scrollAreaRef.current) {
+      const now = new Date();
+      if (
+        now.toDateString() === selectedDate.toDateString() &&
+        !isLoading
+      ) {
+        currentTimeRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }
+    }
+  }, [selectedDate, isLoading]);
 
   if (isLoading) {
     return (
@@ -110,141 +117,41 @@ export function TimelineView() {
   return (
     <>
       <Card className="p-4">
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => navigateDate("prev")}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "justify-start text-left font-normal",
-                    !selectedDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {selectedDate ? format(selectedDate, "PPP") : "Pick a date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={(date) => {
-                    date && setSelectedDate(date);
-                    setCalendarOpen(false);
-                  }}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => navigateDate("next")}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <div className="space-y-1">
+            <h2 className="text-2xl font-semibold">Daily Timeline</h2>
+            <p className="text-sm text-muted-foreground">
+              View and manage your time entries for the day
+            </p>
           </div>
         </div>
-        
-        <ScrollArea className="h-[600px] pr-4" ref={scrollAreaRef}>
-          <div className="space-y-2">
-            {timeBlocks.map((block, index) => {
-              const isCurrentTime = isCurrentTimeBlock(block);
-              const now = new Date();
-              const isToday =
-                selectedDate.getDate() === now.getDate() &&
-                selectedDate.getMonth() === now.getMonth() &&
-                selectedDate.getFullYear() === now.getFullYear();
-              if (isCurrentTime && isToday) {
-                queueMicrotask(() => {
-                  if (currentTimeRef.current && scrollAreaRef.current) {
-                    const scrollPosition = currentTimeRef.current.offsetTop - 200;
-                    scrollAreaRef.current.scrollTop = scrollPosition;
-                  }
-                });
-              }
-              return (
-                <div key={index}>
-                  {isCurrentTime && (
-                    <div
-                      ref={currentTimeRef}
-                      className="relative h-0.5 -mb-0.5 bg-blue-500 dark:bg-blue-400 w-full z-10"
-                    />
-                  )}
-                  <div
-                    className={cn(
-                      "flex items-start p-2 rounded-lg transition-colors cursor-pointer",
-                      "hover:bg-accent hover:bg-opacity-50",
-                      "dark:hover:bg-accent dark:hover:bg-opacity-25",
-                      isCurrentTime && "bg-blue-50 dark:bg-blue-900/20"
-                    )}
-                    onClick={() => handleTimeBlockClick(block.startTime)}
-                  >
-                    <div className="w-20 text-sm text-muted-foreground">
-                      {format(block.startTime, "HH:mm")}
-                    </div>
-                    <div className="flex-1">
-                      {block.entries.length > 0 ? (
-                        block.entries.map((entry) => (
-                          <div
-                            key={entry.id}
-                            className={cn(
-                              "flex items-center justify-between p-3 rounded-md mb-1",
-                              "bg-card dark:bg-card/90",
-                              "border border-border/50",
-                              "transition-all duration-200 ease-in-out",
-                              "hover:shadow-md dark:hover:shadow-none",
-                              "hover:border-border"
-                            )}
-                          >
-                            <div className="space-y-1">
-                              <p className="font-medium">{entry.note}</p>
-                              {entry.category && (
-                                <Badge
-                                  variant="secondary"
-                                  className={`${getCategoryColor(entry.category)} text-white`}
-                                >
-                                  {entry.category}
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              {entry.duration} min
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className={cn(
-                          "h-8 rounded-md",
-                          "border border-dashed border-muted-foreground/20",
-                          "dark:border-muted-foreground/10",
-                          "transition-colors duration-200",
-                          "hover:border-muted-foreground/30",
-                          "dark:hover:border-muted-foreground/20"
-                        )} />
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </ScrollArea>
+
+        <Timeline
+          timeBlocks={timeBlocks}
+          selectedDate={selectedDate}
+          setSelectedDate={setSelectedDate}
+          calendarOpen={false}
+          setCalendarOpen={() => {}}
+          handleTimeBlockClick={handleTimeBlockClick}
+          currentTimeRef={currentTimeRef}
+          scrollAreaRef={scrollAreaRef}
+          onEditEntry={handleEditEntry}
+        />
+
+        {/* Real-time indicator */}
+        <div className="mt-4 flex items-center justify-end gap-2 text-xs text-muted-foreground">
+          <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+          <span>Updates automatically every 30 seconds</span>
+        </div>
       </Card>
 
       <TimeEntryDialog
         open={dialogOpen}
-        onOpenChange={setDialogOpen}
+        onOpenChange={handleDialogClose}
         defaultDate={selectedDate}
         defaultStartTime={selectedTime}
+        editEntry={editEntry}
+        onTimeEntryCreated={handleTimeEntryCreated}
       />
     </>
   );
