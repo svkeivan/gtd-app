@@ -1,17 +1,41 @@
 "use client";
 
 import { useAppStore } from "@/lib/store";
-import { Item } from "@prisma/client";
+import { getContexts } from "@/actions/contexts";
+import { getProjects } from "@/actions/projects";
 import { useEffect, useState } from "react";
 import { ItemCard } from "./item-card";
+
+import { Context, Item, Project } from "@prisma/client";
 
 export function InboxList({ initialItems }: { initialItems: Item[] }) {
   const { items, setItems } = useAppStore();
   const [status, setStatus] = useState<string>("INBOX");
   const [search, setSearch] = useState<string>("");
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [contexts, setContexts] = useState<Context[]>([]);
+
   useEffect(() => {
     setItems(initialItems);
   }, [initialItems]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [projectsData, contextsData] = await Promise.all([
+          getProjects(),
+          getContexts(),
+        ]);
+
+        setProjects(projectsData);
+        setContexts(contextsData);
+      } catch (error) {
+        console.error("Failed to load projects and contexts:", error);
+      }
+    };
+
+    loadData();
+  }, []);
 
   const statusValues = ["all", ...new Set(items.map((item) => item.status))];
 
@@ -58,7 +82,12 @@ export function InboxList({ initialItems }: { initialItems: Item[] }) {
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {filteredItems.map((item) => (
-          <ItemCard key={item.id} item={item} />
+          <ItemCard
+            key={item.id}
+            item={item}
+            projects={projects}
+            contexts={contexts}
+          />
         ))}
       </div>
     </div>

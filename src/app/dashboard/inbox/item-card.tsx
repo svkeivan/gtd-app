@@ -4,7 +4,6 @@ import { getContexts } from "@/actions/contexts";
 import { getProjects } from "@/actions/projects";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-// import { auth } from "@/lib/auth";
 import { getPriorityColor } from "@/lib/utils";
 import {
   ChecklistItem,
@@ -38,29 +37,15 @@ interface ItemWithProject extends Item {
   checklistItems?: ChecklistItem[];
 }
 
-export function ItemCard({ item: initialItem }: { item: ItemWithProject }) {
+interface ItemCardProps {
+  item: ItemWithProject;
+  projects: Project[];
+  contexts: Context[];
+}
+
+export function ItemCard({ item: initialItem, projects, contexts }: ItemCardProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [item, setItem] = useState<ItemWithProject>(initialItem);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [contexts, setContexts] = useState<Context[]>([]);
-
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [projectsData, contextsData] = await Promise.all([
-          getProjects(),
-          getContexts(),
-        ]);
-
-        setProjects(projectsData);
-        setContexts(contextsData);
-      } catch (error) {
-        console.error("Failed to load projects and contexts:", error);
-      }
-    };
-
-    loadData();
-  }, []);
   const {
     id,
     title,
