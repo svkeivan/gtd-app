@@ -1,5 +1,6 @@
 "use client";
 import { getProfile, updateProfile } from "@/actions/profile";
+import { uploadAvatar } from "@/actions/upload";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -169,20 +170,24 @@ export function ProfileSetupForm() {
     }
 
     try {
+      setIsSaving(true);
       const formData = new FormData();
       formData.append("file", file);
 
-      // In a real app, you would upload to a storage service
-      // For now, we'll use a data URL
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64data = reader.result as string;
-        form.setValue("avatar", base64data);
-      };
-      reader.readAsDataURL(file);
+      const avatarPath = await uploadAvatar(formData);
+      form.setValue("avatar", avatarPath);
+      
+      // Save the profile with the new avatar
+      const currentFormData = form.getValues();
+      await updateProfile(currentFormData);
+      setOriginalData(currentFormData);
+      setSuccess(true);
+      setError(null);
     } catch (err) {
       console.error("Avatar upload error:", err);
       setError("Failed to upload avatar");
+    } finally {
+      setIsSaving(false);
     }
   };
 
