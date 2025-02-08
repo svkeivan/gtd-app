@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { NextAction, useAppStore } from "@/lib/store";
+import { PriorityLevel } from "@prisma/client";
 import { ContextSummary, ProjectSummary } from "@/types/project-types";
 import {
   DragDropContext,
@@ -26,14 +27,12 @@ interface NextActionListProps {
   initialNextActions: NextAction[];
   projects: ProjectSummary[];
   contexts: ContextSummary[];
-  userId: string;
 }
 
 export function NextActionsList({
   initialNextActions,
   projects,
   contexts,
-  userId,
 }: NextActionListProps) {
   const { nextActions, setNextActions, reorderNextActions } = useAppStore();
   const [filterProject, setFilterProject] = useState("all");
@@ -60,7 +59,13 @@ export function NextActionsList({
       .sort((a, b) => {
         switch (sortBy) {
           case "priority":
-            return a.priority - b.priority;
+            const priorityOrder = {
+              URGENT: 0,
+              HIGH: 1,
+              MEDIUM: 2,
+              LOW: 3,
+            };
+            return priorityOrder[a.priority] - priorityOrder[b.priority];
           case "title":
             return a.title.localeCompare(b.title);
           case "dueDate":
@@ -85,14 +90,28 @@ export function NextActionsList({
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
 
-    reorderNextActions(
-      items.map((item, index) => ({ ...item, priority: index })),
-    );
+    // Map index positions to priority levels
+    const indexToPriority = (index: number): PriorityLevel => {
+      if (index < items.length * 0.25) return "URGENT";
+      if (index < items.length * 0.5) return "HIGH";
+      if (index < items.length * 0.75) return "MEDIUM";
+      return "LOW";
+    };
+
+    const reorderedItems = items.map((item, index) => ({
+      ...item,
+      priority: indexToPriority(index),
+    }));
+
+    reorderNextActions(reorderedItems);
 
     // Update priorities on the server
     try {
       await updateItemsPriority(
-        items.map((item, index) => ({ id: item.id, priority: index })),
+        reorderedItems.map((item) => ({
+          id: item.id,
+          priority: item.priority,
+        })),
       );
     } catch (error) {
       console.error("Error updating priorities:", error);
@@ -140,13 +159,21 @@ export function NextActionsList({
             }
             break;
           case "priority":
-            const priority = action.priority || 0;
-            groupKey =
-              priority < 3
-                ? "High Priority"
-                : priority < 6
-                  ? "Medium Priority"
-                  : "Low Priority";
+            switch (action.priority) {
+              case "URGENT":
+                groupKey = "Urgent";
+                break;
+              case "HIGH":
+                groupKey = "High Priority";
+                break;
+              case "MEDIUM":
+                groupKey = "Medium Priority";
+                break;
+              case "LOW":
+              default:
+                groupKey = "Low Priority";
+                break;
+            }
             break;
         }
         if (!acc[groupKey]) acc[groupKey] = [];

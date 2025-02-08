@@ -115,17 +115,19 @@ export function NextActionCard({ action }: NextActionCardProps) {
               {action.title}
             </CardTitle>
           </div>
-          {action.priority !== undefined && (
+          {action.priority && (
             <Badge
               variant={
-                action.priority < 3
+                action.priority === "URGENT"
                   ? "destructive"
-                  : action.priority < 6
+                  : action.priority === "HIGH"
                     ? "default"
-                    : "secondary"
+                    : action.priority === "MEDIUM"
+                      ? "secondary"
+                      : "outline"
               }
             >
-              Priority {action.priority + 1}
+              {action.priority}
             </Badge>
           )}
         </div>
