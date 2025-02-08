@@ -7,9 +7,9 @@ import { Toaster } from "@/components/ui/toaster";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "GTD App",
+  title: "Planito",
   description:
-    "A personal productivity app based on the Getting Things Done methodology",
+    "Plan with purpose, achieve with clarity - Your intelligent personal planning companion",
 };
 
 export default function RootLayout({

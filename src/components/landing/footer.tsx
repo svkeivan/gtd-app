@@ -64,7 +64,7 @@ export function Footer() {
         </div>
         <div className="flex flex-col md:flex-row justify-between items-center pt-8 border-t">
           <div className="text-muted-foreground mb-4 md:mb-0">
-            © 2025 GTD App. All rights reserved.
+            © 2025 Planito. All rights reserved.
           </div>
           <div className="flex gap-4">
             <Link href="#" className="text-muted-foreground hover:text-primary">

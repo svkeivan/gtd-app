@@ -13,10 +13,10 @@ export function HeroSection({ isLoggedIn }: HeroSectionProps) {
         <div className="flex flex-col items-center text-center lg:text-left lg:flex-row lg:justify-between lg:gap-12">
           <div className="max-w-2xl lg:w-1/2">
             <h1 className="text-4xl font-bold tracking-tight sm:text-6xl mb-6 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-              Turn Chaos into Clarity with GTD
+              Planito: Your Journey to Organized Living
             </h1>
             <p className="text-xl text-muted-foreground mb-8">
-              The intelligent task management system that adapts to your workflow
+              Where planning meets simplicity - Transform your ideas into achievable goals
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
               <div className="text-center p-4 bg-background/50 rounded-lg">
@@ -56,7 +56,7 @@ export function HeroSection({ isLoggedIn }: HeroSectionProps) {
             <div className="relative">
               <Image
                 src="/window.svg"
-                alt="GTD App Interface"
+                alt="Planito Interface"
                 width={600}
                 height={400}
                 className="rounded-lg shadow-2xl"

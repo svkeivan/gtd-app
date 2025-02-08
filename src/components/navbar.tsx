@@ -28,7 +28,7 @@ export function Navbar() {
           href="/"
           className="text-xl font-bold"
         >
-          GTD App
+          Planito
         </Link>
         <div className="ml-auto flex items-center space-x-4">
           {navItems.map((item) => (

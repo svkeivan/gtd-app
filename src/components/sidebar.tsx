@@ -19,6 +19,7 @@ import {
   LogOut,
   Menu,
   RefreshCw,
+  Sprout,
   Tags,
 } from "lucide-react";
 import Link from "next/link";
@@ -53,7 +54,9 @@ export function Sidebar() {
         const data = await getProfile();
         setProfile(data);
       } catch (error) {
-        setError(error instanceof Error ? error.message : "Failed to fetch profile");
+        setError(
+          error instanceof Error ? error.message : "Failed to fetch profile",
+        );
         console.error("Failed to fetch profile:", error);
       } finally {
         setIsLoading(false);
@@ -157,27 +160,42 @@ export function Sidebar() {
       )}
 
       <aside
-        className={`fixed left-0 top-0 z-50 h-screen bg-background shadow-lg transition-all duration-300 ease-in-out
-          ${isCollapsed ? "w-20" : "w-64"} 
-          ${isMobileOpen ? "translate-x-0" : "-translate-x-full"} 
-          lg:translate-x-0`}
+        className={`fixed left-0 top-0 z-50 h-screen bg-background shadow-lg transition-all duration-300 ease-in-out ${isCollapsed ? "w-20" : "w-64"} ${isMobileOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}
       >
         <div className="flex h-full flex-col">
-          <div className="flex h-16 items-center justify-between border-b px-4">
+          <div className="flex h-24 flex-col justify-center border-b px-4">
             <Link
               href="/"
-              className={`group flex items-center gap-2 transition-transform duration-200 hover:scale-105
-                ${isCollapsed ? "justify-center" : "text-xl font-bold"}`}
+              className={`group transition-transform duration-200 hover:scale-105 ${isCollapsed ? "items-center justify-center" : ""}`}
             >
               {isCollapsed ? (
-                <span className="text-2xl font-bold text-blue-600">G</span>
+                <div className="flex flex-col items-center gap-1">
+                  <Sprout
+                    className="h-6 w-6 animate-pulse text-primary"
+                    color="#15803d"
+                  />
+                  <span className="text-xs font-semibold text-primary">
+                    Grow
+                  </span>
+                </div>
               ) : (
-                <span className="bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
-                  GTD App
-                </span>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Sprout
+                      className="h-6 w-6 animate-pulse text-primary"
+                      color="#15803d"
+                    />
+                    <span className="text-2xl font-bold text-primary">
+                      <span className="text-green-700">Plan</span>ito
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Grow your productivity, naturally
+                  </p>
+                </div>
               )}
             </Link>
-            <div className="flex items-center gap-2">
+            <div className="absolute right-4 top-4 flex items-center gap-2">
               <ThemeSwitcher />
               <Button
                 variant="ghost"
@@ -210,11 +228,13 @@ export function Sidebar() {
                         variant={pathname === item.href ? "secondary" : "ghost"}
                         className={`w-full justify-start text-left transition-all duration-200 hover:translate-x-1 ${
                           pathname === item.href
-                            ? "bg-gradient-to-r from-blue-600 to-blue-700 font-medium text-primary-foreground shadow-md"
+                            ? "bg-primary font-bold text-primary-foreground shadow-md"
                             : "hover:bg-accent"
                         } ${isCollapsed ? "px-3" : ""}`}
                       >
-                        <item.icon className={`h-4 w-4 ${!isCollapsed && "mr-3"}`} />
+                        <item.icon
+                          className={`h-4 w-4 ${!isCollapsed && "mr-3"}`}
+                        />
                         {!isCollapsed && item.label}
                       </Button>
                     </Link>
@@ -244,7 +264,9 @@ export function Sidebar() {
                   <span className="text-xl">!</span>
                 ) : (
                   <div className="flex flex-col items-start">
-                    <span className="text-sm font-medium">Error Loading Profile</span>
+                    <span className="text-sm font-medium">
+                      Error Loading Profile
+                    </span>
                     <span className="text-xs">Click to retry</span>
                   </div>
                 )}
@@ -268,7 +290,9 @@ export function Sidebar() {
                           {profile?.name || "Setup Profile"}
                         </span>
                         <span className="text-xs text-muted-foreground">
-                          {profile?.profileComplete ? "View Profile" : "Complete Setup"}
+                          {profile?.profileComplete
+                            ? "View Profile"
+                            : "Complete Setup"}
                         </span>
                       </div>
                     )}
