@@ -39,6 +39,7 @@ import {
   Context,
   Item,
   ItemStatus,
+  PriorityLevel,
   Project,
   Subtask,
   Tag,
@@ -216,7 +217,7 @@ export function EditItemDialog({
                   <Select
                     value={item.priority.toString()}
                     onValueChange={(value) =>
-                      setItem({ ...item, priority: parseInt(value) })
+                      setItem({ ...item, priority: value as PriorityLevel })
                     }
                   >
                     <SelectTrigger>

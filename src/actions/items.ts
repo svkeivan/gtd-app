@@ -837,6 +837,20 @@ export async function splitTaskIntoSessions(itemId: string): Promise<void> {
   revalidatePath("/next-actions");
 }
 
+export async function deleteItem(id: string) {
+  const { user } = await auth();
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  await prisma.item.delete({
+    where: { id },
+  });
+
+  revalidatePath("/inbox");
+  return { success: true };
+}
+
 export async function updateItemsPriority(
   items: { id: string; priority: PriorityLevel }[],
 ) {

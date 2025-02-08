@@ -1,10 +1,19 @@
 "use client";
 
-import { getContexts } from "@/actions/contexts";
-import { getProjects } from "@/actions/projects";
+import { deleteItem } from "@/actions/items";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { getPriorityColor } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  convertMinutesToHoursAndMinutes,
+  getPriorityColor,
+  getTimeAgo,
+} from "@/lib/utils";
 import {
   ChecklistItem,
   Context,
@@ -13,7 +22,7 @@ import {
   Subtask,
   Tag,
 } from "@prisma/client";
-import { differenceInDays, format } from "date-fns";
+import { format } from "date-fns";
 import {
   ArrowRight,
   CalendarDays,
@@ -21,12 +30,13 @@ import {
   CheckSquare,
   CircleDot,
   Clock,
+  Flag,
   Folder,
   ListTodo,
   MoreHorizontal,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { EditItemDialog } from "./edit-item-dialog";
 
 interface ItemWithProject extends Item {
@@ -43,15 +53,30 @@ interface ItemCardProps {
   contexts: Context[];
 }
 
-export function ItemCard({ item: initialItem, projects, contexts }: ItemCardProps) {
+export function ItemCard({
+  item: initialItem,
+  projects,
+  contexts,
+}: ItemCardProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [item, setItem] = useState<ItemWithProject>(initialItem);
+
+  const handleDelete = async () => {
+    try {
+      setIsDeleting(true);
+      await deleteItem(id);
+    } catch (error) {
+      console.error("Failed to delete item:", error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
   const {
     id,
     title,
     notes,
     createdAt,
-    projectId,
     project,
     status,
     priority,
@@ -78,7 +103,7 @@ export function ItemCard({ item: initialItem, projects, contexts }: ItemCardProp
       <Card className="relative h-full overflow-hidden transition-all duration-300 hover:shadow-lg">
         <div
           className="absolute inset-x-0 top-0 h-1"
-          style={{ backgroundColor: getPriorityColor(priority) }}
+          style={{ backgroundColor: getPriorityColor(Number(priority)) }}
         />
         <CardContent className="p-6">
           <div className="mb-6 flex items-start justify-between">
@@ -92,14 +117,30 @@ export function ItemCard({ item: initialItem, projects, contexts }: ItemCardProp
                 </p>
               )}
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="opacity-0 transition-opacity group-hover:opacity-100"
-              onClick={() => setIsOpen(true)}
-            >
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="opacity-0 transition-opacity group-hover:opacity-100"
+                  disabled={isDeleting}
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setIsOpen(true)}>
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-red-600"
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                >
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           <div className="space-y-4">
@@ -113,7 +154,8 @@ export function ItemCard({ item: initialItem, projects, contexts }: ItemCardProp
                 {status}
               </span>
               <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-medium text-purple-800">
-                {priority} Priority
+                <Flag className="h-3 w-3" />
+                {priority}
               </span>
               {dueDate && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-pink-100 px-2.5 py-0.5 text-xs font-medium text-pink-800">
@@ -124,7 +166,7 @@ export function ItemCard({ item: initialItem, projects, contexts }: ItemCardProp
               {estimated && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-indigo-800">
                   <Clock className="h-3 w-3" />
-                  {estimated}h
+                  {convertMinutesToHoursAndMinutes(estimated)}
                 </span>
               )}
             </div>
@@ -150,8 +192,8 @@ export function ItemCard({ item: initialItem, projects, contexts }: ItemCardProp
             <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
                 <CalendarDays className="h-3 w-3" />
-                {differenceInDays(new Date(), new Date(createdAt))} days ago
-              </span>
+                {getTimeAgo(createdAt)}
+              </span>{" "}
               {project?.title && (
                 <span className="flex items-center gap-1">
                   <Folder className="h-3 w-3" />
@@ -172,7 +214,7 @@ export function ItemCard({ item: initialItem, projects, contexts }: ItemCardProp
               >
                 <Button
                   variant="ghost"
-                  className="w-full gap-2 opacity-0 transition-opacity group-hover:opacity-100"
+                  className="w-full gap-2 opacity-50 transition-opacity group-hover:opacity-100"
                 >
                   Process Item
                   <ArrowRight className="h-4 w-4" />
