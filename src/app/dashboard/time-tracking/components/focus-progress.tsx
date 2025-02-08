@@ -1,24 +1,21 @@
 "use client";
 
+import { getSession } from "@/actions/auth";
 import { getFocusStats } from "@/actions/focus-sessions";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { auth } from "@/lib/auth";
 import { endOfDay, startOfDay } from "date-fns";
 import useSWR from "swr";
 
-interface FocusProgressProps {
-  userId: string;
-}
-
 const fetcher = async () => {
   const now = new Date();
-  const { user } = await auth();
-  if (!user) {
-    throw new Error("User not found");
+  const session = await getSession();
+  if (!session) {
+    throw new Error("User session not found");
   }
+  const { id: userId } = session;
   return getFocusStats({
-    userId: user.id,
+    userId,
     startDate: startOfDay(now),
     endDate: endOfDay(now),
   });

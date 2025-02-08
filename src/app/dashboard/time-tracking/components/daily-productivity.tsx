@@ -1,7 +1,7 @@
 "use client";
 
+import { getSession } from "@/actions/auth";
 import { Card } from "@/components/ui/card";
-import { auth } from "@/lib/auth";
 import { createSafeAction } from "@/lib/create-safe-action";
 import prisma from "@/lib/prisma";
 import { format, startOfDay } from "date-fns";
@@ -39,12 +39,13 @@ const getDailyProductivity = createSafeAction(
 
 const fetcher = async () => {
   const now = new Date();
-  const { user } = await auth();
-  if (!user) {
-    throw new Error("User not found");
+  const session = await getSession();
+  if (!session) {
+    throw new Error("User session not found");
   }
+  const { id: userId } = session;
   return getDailyProductivity({
-    userId: user.id,
+    userId,
     date: startOfDay(now),
   });
 };

@@ -1,9 +1,9 @@
 "use client";
 
+import { getSession } from "@/actions/auth";
 import { getBreakStats } from "@/actions/break-sessions";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { auth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { BreakType } from "@prisma/client";
 import { endOfDay, startOfDay } from "date-fns";
@@ -11,12 +11,13 @@ import useSWR from "swr";
 
 const fetcher = async () => {
   const now = new Date();
-  const { user } = await auth();
-  if (!user) {
-    throw new Error("User not found");
+  const session = await getSession();
+  if (!session) {
+    throw new Error("User session not found");
   }
+  const { id: userId } = session;
   return getBreakStats({
-    userId: user.id,
+    userId,
     startDate: startOfDay(now),
     endDate: endOfDay(now),
   });
