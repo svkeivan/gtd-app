@@ -3,9 +3,7 @@ import { getInboxCount, getItemToProcess } from "@/actions/items";
 import { getProjects } from "@/actions/projects";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { auth } from "@/lib/auth";
 import { CheckCircle2, InboxIcon } from "lucide-react";
-import { redirect } from "next/navigation";
 import { ProcessForm } from "./process-form";
 
 export default async function ProcessPage({
@@ -13,8 +11,6 @@ export default async function ProcessPage({
 }: {
   searchParams: Promise<{ id?: string }>;
 }) {
-
-
   const Params = await searchParams;
   const { id: itemId } = Params;
   const item = itemId

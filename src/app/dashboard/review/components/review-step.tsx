@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import { TooltipProvider, TooltipRoot, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { Button } from "@/components/ui/button"
 import { HelpCircle, ChevronRight, ChevronDown } from "lucide-react"
 
@@ -48,7 +48,7 @@ export function ReviewStep({
               {label}
             </label>
             <TooltipProvider>
-              <TooltipRoot>
+              <Tooltip>
                 <TooltipTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full p-0">
                     <HelpCircle className="h-4 w-4" />
@@ -57,7 +57,7 @@ export function ReviewStep({
                 <TooltipContent>
                   <p className="max-w-xs text-sm">{tooltip}</p>
                 </TooltipContent>
-              </TooltipRoot>
+              </Tooltip>
             </TooltipProvider>
           </div>
           <div className="flex items-center space-x-2">

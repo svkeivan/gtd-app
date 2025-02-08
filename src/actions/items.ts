@@ -1,7 +1,12 @@
 "use server";
 
 import { auth } from "@/lib/auth";
-import { CommentType, ItemStatus, PrismaClient, PriorityLevel } from "@prisma/client";
+import {
+  CommentType,
+  ItemStatus,
+  PriorityLevel,
+  PrismaClient,
+} from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { cache } from "react";
 
@@ -310,9 +315,9 @@ export async function getItemToProcess(id?: string) {
     throw new Error("User not found");
   }
   const item = await prisma.item.findFirst({
-    where: {
-      OR: [{ id: id }, { userId: user?.id, status: "INBOX" }],
-    },
+    where: id
+      ? { id: id }
+      : { userId: user.id, status: "INBOX" },
     include: {
       contexts: true,
       subtasks: {
@@ -332,7 +337,6 @@ export async function getItemToProcess(id?: string) {
   });
   return item;
 }
-
 export async function getItemOfProjects(id: string) {
   const item = await prisma.item.findFirst({
     where: {
@@ -525,7 +529,9 @@ export async function updateItem(
       ...(data.projectId !== undefined && { projectId: data.projectId }),
       ...(data.priority !== undefined && { priority: data.priority }),
       ...(data.estimated !== undefined && { estimated: data.estimated }),
-      ...(data.requiresFocus !== undefined && { requiresFocus: data.requiresFocus }),
+      ...(data.requiresFocus !== undefined && {
+        requiresFocus: data.requiresFocus,
+      }),
       ...(data.contextIds && {
         contexts: {
           set: data.contextIds.map((id) => ({ id })),
@@ -684,7 +690,9 @@ interface TaskBreakdown {
   totalDuration: number;
 }
 
-export async function calculateTaskBreakdown(itemId: string): Promise<TaskBreakdown> {
+export async function calculateTaskBreakdown(
+  itemId: string,
+): Promise<TaskBreakdown> {
   const { user: sessionUser } = await auth();
   if (!sessionUser) {
     throw new Error("User not found");
@@ -746,8 +754,8 @@ export async function calculateTaskBreakdown(itemId: string): Promise<TaskBreakd
   // Calculate total duration including breaks
   const totalDuration =
     totalMinutes + // Task time
-    (shortBreaks * shortBreakDuration) + // Short break time
-    (longBreaks * longBreakDuration); // Long break time
+    shortBreaks * shortBreakDuration + // Short break time
+    longBreaks * longBreakDuration; // Long break time
 
   return {
     focusSessions: fullSessions + (remainingTime > 0 ? 1 : 0),
@@ -766,7 +774,7 @@ export async function splitTaskIntoSessions(itemId: string): Promise<void> {
 
   // Get the breakdown first
   const breakdown = await calculateTaskBreakdown(itemId);
-  
+
   // Get the original task
   const originalTask = await prisma.item.findUnique({
     where: { id: itemId },
@@ -778,7 +786,9 @@ export async function splitTaskIntoSessions(itemId: string): Promise<void> {
   });
 
   if (!originalTask?.estimated || !originalTask.requiresFocus) {
-    throw new Error("Task cannot be split: missing estimation or focus requirement");
+    throw new Error(
+      "Task cannot be split: missing estimation or focus requirement",
+    );
   }
 
   // Get user preferences for session duration
@@ -796,12 +806,13 @@ export async function splitTaskIntoSessions(itemId: string): Promise<void> {
   // Create subtasks for each focus session
   for (let i = 0; i < breakdown.focusSessions; i++) {
     const isLastSession = i === breakdown.focusSessions - 1;
-    const sessionDuration = isLastSession && breakdown.remainingTime > 0
-      ? breakdown.remainingTime
-      : user.pomodoroDuration;
+    const sessionDuration =
+      isLastSession && breakdown.remainingTime > 0
+        ? breakdown.remainingTime
+        : user.pomodoroDuration;
 
     const sessionTitle = `${originalTask.title} - Session ${i + 1}/${breakdown.focusSessions}`;
-    
+
     // Create the session subtask
     const subtaskItem = await prisma.item.create({
       data: {
@@ -827,7 +838,8 @@ export async function splitTaskIntoSessions(itemId: string): Promise<void> {
   await prisma.item.update({
     where: { id: itemId },
     data: {
-      notes: `Split into ${breakdown.focusSessions} focus sessions\n` +
+      notes:
+        `Split into ${breakdown.focusSessions} focus sessions\n` +
         `Total duration: ${breakdown.totalDuration} minutes\n` +
         `Short breaks: ${breakdown.shortBreaks}\n` +
         `Long breaks: ${breakdown.longBreaks}`,
