@@ -55,7 +55,7 @@ export default function TimeTrackingPage() {
         
         <TabsContent value="analytics" className="space-y-4">
           <Suspense fallback={<LoadingCard />}>
-            <AnalyticsView />
+            <AnalyticsView  />
           </Suspense>
         </TabsContent>
       </Tabs>

@@ -1,35 +1,50 @@
 "use client";
 
-import { useState } from "react";
-import { Card } from "@/components/ui/card";
 import { getTimeEntriesReport } from "@/actions/time-entries";
-import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, format, subMonths } from "date-fns";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { TimeEntryReport } from "@/types/time-entry-types";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TimeDistributionChart } from "./components/time-distribution-chart";
-import { ProductivityHeatmap } from "./components/productivity-heatmap";
-import { TrendChart } from "./components/trend-chart";
-import { FocusProgress } from "./components/focus-progress";
+import { TimeEntryReport } from "@/types/time-entry-types";
+import {
+  endOfMonth,
+  endOfWeek,
+  startOfMonth,
+  startOfWeek,
+  subMonths,
+} from "date-fns";
+import { useState } from "react";
+import useSWR from "swr";
 import { BreakProgress } from "./components/break-progress";
 import { DailyProductivity } from "./components/daily-productivity";
-import useSWR from "swr";
+import { FocusProgress } from "./components/focus-progress";
+import { ProductivityHeatmap } from "./components/productivity-heatmap";
+import { TimeDistributionChart } from "./components/time-distribution-chart";
+import { TrendChart } from "./components/trend-chart";
 
 type DateRange = "week" | "month" | "3months";
 
-const fetcher = async (startDate: Date, endDate: Date): Promise<TimeEntryReport | null> => {
-  const result = await getTimeEntriesReport(startDate, endDate, ["time-entries-report"]);
+const fetcher = async (
+  startDate: Date,
+  endDate: Date,
+): Promise<TimeEntryReport | null> => {
+  const result = await getTimeEntriesReport(startDate, endDate, [
+    "time-entries-report",
+  ]);
   return result || null;
 };
 
-interface AnalyticsViewProps {
-  userId: string;
-}
-
-export function AnalyticsView({ userId }: AnalyticsViewProps) {
+export function AnalyticsView() {
   const [dateRange, setDateRange] = useState<DateRange>("week");
-  const [selectedView, setSelectedView] = useState<"overview" | "distribution" | "heatmap" | "trend">("overview");
+  const [selectedView, setSelectedView] = useState<
+    "overview" | "distribution" | "heatmap" | "trend"
+  >("overview");
 
   // Calculate date range
   const { startDate, endDate } = (() => {
@@ -66,7 +81,7 @@ export function AnalyticsView({ userId }: AnalyticsViewProps) {
       refreshInterval: 30000, // Refresh every 30 seconds
       revalidateOnFocus: true,
       fallbackData: null, // Provide null as fallback to satisfy type system
-    }
+    },
   );
 
   const handleRangeChange = (value: DateRange) => {
@@ -76,7 +91,7 @@ export function AnalyticsView({ userId }: AnalyticsViewProps) {
   return (
     <div className="space-y-6">
       <Card className="p-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <div className="space-y-1">
             <h2 className="text-2xl font-semibold">Time Analytics</h2>
             <p className="text-sm text-muted-foreground">
@@ -98,8 +113,12 @@ export function AnalyticsView({ userId }: AnalyticsViewProps) {
           </div>
         </div>
 
-        <Tabs value={selectedView} onValueChange={(v) => setSelectedView(v as any)} className="space-y-4">
-          <TabsList className="grid w-full sm:w-[400px] grid-cols-4">
+        <Tabs
+          value={selectedView}
+          onValueChange={(v) => setSelectedView(v as any)}
+          className="space-y-4"
+        >
+          <TabsList className="grid w-full grid-cols-4 sm:w-[400px]">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="distribution">Distribution</TabsTrigger>
             <TabsTrigger value="heatmap">Patterns</TabsTrigger>
@@ -108,9 +127,9 @@ export function AnalyticsView({ userId }: AnalyticsViewProps) {
 
           <TabsContent value="overview" className="space-y-4">
             <div className="grid gap-4 md:grid-cols-3">
-              <DailyProductivity userId={userId} />
-              <FocusProgress userId={userId} />
-              <BreakProgress userId={userId} />
+              <DailyProductivity />
+              <FocusProgress />
+              <BreakProgress />
             </div>
           </TabsContent>
 
@@ -119,9 +138,9 @@ export function AnalyticsView({ userId }: AnalyticsViewProps) {
           </TabsContent>
 
           <TabsContent value="heatmap" className="space-y-4">
-            <ProductivityHeatmap 
-              entries={data?.entries || []} 
-              isLoading={isLoading} 
+            <ProductivityHeatmap
+              entries={data?.entries || []}
+              isLoading={isLoading}
             />
           </TabsContent>
 
@@ -137,7 +156,7 @@ export function AnalyticsView({ userId }: AnalyticsViewProps) {
 
         {/* Real-time indicator */}
         <div className="mt-4 flex items-center justify-end gap-2 text-xs text-muted-foreground">
-          <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+          <div className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
           <span>Updates automatically every 30 seconds</span>
         </div>
       </Card>

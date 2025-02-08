@@ -11,7 +11,7 @@ export default async function ProjectsPage() {
     redirect("/login");
   }
 
-  const projects = await getProjects(user.id);
+  const projects = await getProjects();
   const activeProjects = projects.filter((p) => p.status === "ACTIVE");
   const completedProjects = projects.filter((p) => p.status === "COMPLETED");
   const onHoldProjects = projects.filter((p) => p.status === "ON_HOLD");

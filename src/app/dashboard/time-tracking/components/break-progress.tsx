@@ -1,22 +1,22 @@
 "use client";
 
-import { Card } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { getBreakStats } from "@/actions/break-sessions";
-import { startOfDay, endOfDay } from "date-fns";
-import useSWR from "swr";
 import { Badge } from "@/components/ui/badge";
-import { BreakType } from "@prisma/client";
+import { Card } from "@/components/ui/card";
+import { auth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
+import { BreakType } from "@prisma/client";
+import { endOfDay, startOfDay } from "date-fns";
+import useSWR from "swr";
 
-interface BreakProgressProps {
-  userId: string;
-}
-
-const fetcher = async (userId: string) => {
+const fetcher = async () => {
   const now = new Date();
+  const { user } = await auth();
+  if (!user) {
+    throw new Error("User not found");
+  }
   return getBreakStats({
-    userId,
+    userId: user.id,
     startDate: startOfDay(now),
     endDate: endOfDay(now),
   });
@@ -34,13 +34,13 @@ const breakTypeBadgeColors: Record<BreakType, string> = {
   LUNCH: "bg-green-100 text-green-800",
 };
 
-export function BreakProgress({ userId }: BreakProgressProps) {
+export function BreakProgress() {
   const { data: statsResult, isLoading } = useSWR(
-    `break-stats-${userId}`,
-    () => fetcher(userId),
+    `break-stats`,
+    () => fetcher(),
     {
       refreshInterval: 30000, // Refresh every 30 seconds
-    }
+    },
   );
 
   const stats = statsResult?.data;
@@ -48,11 +48,11 @@ export function BreakProgress({ userId }: BreakProgressProps) {
   if (isLoading) {
     return (
       <Card className="p-4">
-        <div className="h-[120px] flex items-center justify-center">
-          <div className="animate-pulse space-y-4 w-full">
-            <div className="h-4 bg-gray-200 rounded w-3/4" />
-            <div className="h-2 bg-gray-200 rounded w-full" />
-            <div className="h-4 bg-gray-200 rounded w-1/2" />
+        <div className="flex h-[120px] items-center justify-center">
+          <div className="w-full animate-pulse space-y-4">
+            <div className="h-4 w-3/4 rounded bg-gray-200" />
+            <div className="h-2 w-full rounded bg-gray-200" />
+            <div className="h-4 w-1/2 rounded bg-gray-200" />
           </div>
         </div>
       </Card>
@@ -70,7 +70,7 @@ export function BreakProgress({ userId }: BreakProgressProps) {
   };
 
   return (
-    <Card className="p-4 space-y-4">
+    <Card className="space-y-4 p-4">
       <div className="space-y-2">
         <h3 className="text-lg font-semibold">Break Adherence</h3>
         <div className="text-sm text-muted-foreground">
@@ -80,47 +80,44 @@ export function BreakProgress({ userId }: BreakProgressProps) {
 
       <div className="space-y-4">
         <div>
-          <div className="flex justify-between text-sm mb-2">
+          <div className="mb-2 flex justify-between text-sm">
             <span>Break Adherence</span>
             <span>{Math.round(stats.breakAdherence)}%</span>
           </div>
-          <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
             <div
               className={cn(
                 "h-full transition-all",
-                getProgressColor(stats.breakAdherence)
+                getProgressColor(stats.breakAdherence),
               )}
-              style={{ width: `${Math.min(100, Math.max(0, stats.breakAdherence))}%` }}
+              style={{
+                width: `${Math.min(100, Math.max(0, stats.breakAdherence))}%`,
+              }}
             />
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <div className="text-2xl font-bold">
-              {stats.completedBreaks}
-            </div>
-            <div className="text-sm text-muted-foreground">
-              Breaks Taken
-            </div>
+            <div className="text-2xl font-bold">{stats.completedBreaks}</div>
+            <div className="text-sm text-muted-foreground">Breaks Taken</div>
           </div>
           <div>
             <div className="text-2xl font-bold">
               {Math.round(stats.averageBreakDuration)}
             </div>
-            <div className="text-sm text-muted-foreground">
-              Avg. Minutes
-            </div>
+            <div className="text-sm text-muted-foreground">Avg. Minutes</div>
           </div>
         </div>
 
         {stats.skippedBreaks > 0 && (
           <div className="text-sm text-red-600">
-            {stats.skippedBreaks} break{stats.skippedBreaks === 1 ? '' : 's'} skipped today
+            {stats.skippedBreaks} break{stats.skippedBreaks === 1 ? "" : "s"}{" "}
+            skipped today
           </div>
         )}
 
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex flex-wrap gap-2">
           {Object.entries(breakTypeLabels).map(([type, label]) => (
             <Badge
               key={type}

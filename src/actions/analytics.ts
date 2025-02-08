@@ -1,6 +1,6 @@
 'use server'
 
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, PriorityLevel } from '@prisma/client'
 import { startOfDay, subDays, format, startOfWeek, endOfWeek } from 'date-fns'
 
 const prisma = new PrismaClient()
@@ -186,7 +186,7 @@ export async function getAnalyticsData(userId: string): Promise<{
       : 0
 
   // Calculate time to completion metrics
-  const timeToCompletionByPriority = completedItems.reduce((acc, item) => {
+  const timeToCompletionByPriority = completedItems.reduce((acc: Record<PriorityLevel, { total: number; count: number }>, item: { priority: PriorityLevel; createdAt: Date; updatedAt: Date }) => {
     const days = Math.ceil((item.updatedAt.getTime() - item.createdAt.getTime()) / (1000 * 60 * 60 * 24))
     if (!acc[item.priority]) {
       acc[item.priority] = { total: 0, count: 0 }
@@ -194,9 +194,9 @@ export async function getAnalyticsData(userId: string): Promise<{
     acc[item.priority].total += days
     acc[item.priority].count++
     return acc
-  }, {} as Record<number, { total: number; count: number }>)
+  }, {} as Record<PriorityLevel, { total: number; count: number }>)
 
-  const avgTimeToCompletion = completedItems.reduce((sum, item) => {
+  const avgTimeToCompletion = completedItems.reduce((sum, item: { createdAt: Date; updatedAt: Date }) => {
     return sum + Math.ceil((item.updatedAt.getTime() - item.createdAt.getTime()) / (1000 * 60 * 60 * 24))
   }, 0) / (completedItems.length || 1)
 
@@ -222,10 +222,19 @@ export async function getAnalyticsData(userId: string): Promise<{
     },
     timeToCompletion: {
       avgDays: avgTimeToCompletion,
-      byPriority: Object.entries(timeToCompletionByPriority).map(([priority, data]) => ({
-        priority: Number(priority),
-        avgDays: data.total / data.count,
-      })),
+      byPriority: Object.entries(timeToCompletionByPriority).map(([priority, data]) => {
+        // Map priority levels to numbers for visualization
+        const priorityMap: Record<PriorityLevel, number> = {
+          [PriorityLevel.LOW]: 1,
+          [PriorityLevel.MEDIUM]: 2,
+          [PriorityLevel.HIGH]: 3,
+          [PriorityLevel.URGENT]: 4
+        };
+        return {
+          priority: priorityMap[priority as PriorityLevel],
+          avgDays: data.total / data.count,
+        };
+      }),
     },
     projectHealth,
   }

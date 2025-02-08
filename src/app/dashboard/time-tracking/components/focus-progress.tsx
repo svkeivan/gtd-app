@@ -1,31 +1,36 @@
 "use client";
 
+import { getFocusStats } from "@/actions/focus-sessions";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { getFocusStats } from "@/actions/focus-sessions";
-import { startOfDay, endOfDay } from "date-fns";
+import { auth } from "@/lib/auth";
+import { endOfDay, startOfDay } from "date-fns";
 import useSWR from "swr";
 
 interface FocusProgressProps {
   userId: string;
 }
 
-const fetcher = async (userId: string) => {
+const fetcher = async () => {
   const now = new Date();
+  const { user } = await auth();
+  if (!user) {
+    throw new Error("User not found");
+  }
   return getFocusStats({
-    userId,
+    userId: user.id,
     startDate: startOfDay(now),
     endDate: endOfDay(now),
   });
 };
 
-export function FocusProgress({ userId }: FocusProgressProps) {
+export function FocusProgress() {
   const { data: statsResult, isLoading } = useSWR(
-    `focus-stats-${userId}`,
-    () => fetcher(userId),
+    `focus-stats`,
+    () => fetcher(),
     {
       refreshInterval: 30000, // Refresh every 30 seconds
-    }
+    },
   );
 
   const stats = statsResult?.data;
@@ -33,11 +38,11 @@ export function FocusProgress({ userId }: FocusProgressProps) {
   if (isLoading) {
     return (
       <Card className="p-4">
-        <div className="h-[120px] flex items-center justify-center">
-          <div className="animate-pulse space-y-4 w-full">
-            <div className="h-4 bg-gray-200 rounded w-3/4" />
-            <div className="h-2 bg-gray-200 rounded w-full" />
-            <div className="h-4 bg-gray-200 rounded w-1/2" />
+        <div className="flex h-[120px] items-center justify-center">
+          <div className="w-full animate-pulse space-y-4">
+            <div className="h-4 w-3/4 rounded bg-gray-200" />
+            <div className="h-2 w-full rounded bg-gray-200" />
+            <div className="h-4 w-1/2 rounded bg-gray-200" />
           </div>
         </div>
       </Card>
@@ -49,7 +54,7 @@ export function FocusProgress({ userId }: FocusProgressProps) {
   }
 
   return (
-    <Card className="p-4 space-y-4">
+    <Card className="space-y-4 p-4">
       <div className="space-y-2">
         <h3 className="text-lg font-semibold">Focus Sessions</h3>
         <div className="text-sm text-muted-foreground">
@@ -59,7 +64,7 @@ export function FocusProgress({ userId }: FocusProgressProps) {
 
       <div className="space-y-4">
         <div>
-          <div className="flex justify-between text-sm mb-2">
+          <div className="mb-2 flex justify-between text-sm">
             <span>Success Rate</span>
             <span>{Math.round(stats.successRate)}%</span>
           </div>
@@ -68,26 +73,19 @@ export function FocusProgress({ userId }: FocusProgressProps) {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <div className="text-2xl font-bold">
-              {stats.completedSessions}
-            </div>
-            <div className="text-sm text-muted-foreground">
-              Completed
-            </div>
+            <div className="text-2xl font-bold">{stats.completedSessions}</div>
+            <div className="text-sm text-muted-foreground">Completed</div>
           </div>
           <div>
-            <div className="text-2xl font-bold">
-              {stats.totalFocusMinutes}
-            </div>
-            <div className="text-sm text-muted-foreground">
-              Minutes Focused
-            </div>
+            <div className="text-2xl font-bold">{stats.totalFocusMinutes}</div>
+            <div className="text-sm text-muted-foreground">Minutes Focused</div>
           </div>
         </div>
 
         {stats.interruptedSessions > 0 && (
           <div className="text-sm text-muted-foreground">
-            {stats.interruptedSessions} session{stats.interruptedSessions === 1 ? '' : 's'} interrupted
+            {stats.interruptedSessions} session
+            {stats.interruptedSessions === 1 ? "" : "s"} interrupted
           </div>
         )}
       </div>

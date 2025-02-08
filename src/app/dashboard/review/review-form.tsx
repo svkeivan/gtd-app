@@ -3,7 +3,7 @@
 import { completeWeeklyReview } from "@/actions/reviews"
 import { Button } from "@/components/ui/button"
 import { useAppStore } from "@/lib/store"
-import { ItemStatus } from "@prisma/client"
+import { ItemStatus, PriorityLevel } from "@prisma/client"
 import { useRouter } from "next/navigation"
 import { useState, useCallback } from "react"
 import { ReviewStep } from "./components/review-step"
@@ -69,11 +69,11 @@ export function ReviewForm({
 }: {
   userId: string
   initialReviewItems: {
-    inboxItems: { userId: string; id: string; title: string; notes: string | null; status: ItemStatus; priority: number; dueDate: Date | null; plannedDate: Date | null; estimated: number | null; projectId: string | null; createdAt: Date; updatedAt: Date }[]
-    nextActions: { userId: string; id: string; title: string; notes: string | null; status: ItemStatus; priority: number; dueDate: Date | null; plannedDate: Date | null; estimated: number | null; projectId: string | null; createdAt: Date; updatedAt: Date }[]
+    inboxItems: { userId: string; id: string; title: string; notes: string | null; status: ItemStatus; priority: PriorityLevel; dueDate: Date | null; plannedDate: Date | null; estimated: number | null; projectId: string | null; createdAt: Date; updatedAt: Date; requiresFocus: boolean }[]
+    nextActions: { userId: string; id: string; title: string; notes: string | null; status: ItemStatus; priority: PriorityLevel; dueDate: Date | null; plannedDate: Date | null; estimated: number | null; projectId: string | null; createdAt: Date; updatedAt: Date; requiresFocus: boolean }[]
     projects: { userId: string; id: string; title: string; status: string; createdAt: Date; updatedAt: Date; description: string | null; parentId: string | null }[]
-    waitingFor: { userId: string; id: string; title: string; notes: string | null; status: ItemStatus; priority: number; dueDate: Date | null; plannedDate: Date | null; estimated: number | null; projectId: string | null; createdAt: Date; updatedAt: Date }[]
-    somedayMaybe: { userId: string; id: string; title: string; notes: string | null; status: ItemStatus; priority: number; dueDate: Date | null; plannedDate: Date | null; estimated: number | null; projectId: string | null; createdAt: Date; updatedAt: Date }[]
+    waitingFor: { userId: string; id: string; title: string; notes: string | null; status: ItemStatus; priority: PriorityLevel; dueDate: Date | null; plannedDate: Date | null; estimated: number | null; projectId: string | null; createdAt: Date; updatedAt: Date; requiresFocus: boolean }[]
+    somedayMaybe: { userId: string; id: string; title: string; notes: string | null; status: ItemStatus; priority: PriorityLevel; dueDate: Date | null; plannedDate: Date | null; estimated: number | null; projectId: string | null; createdAt: Date; updatedAt: Date; requiresFocus: boolean }[]
   }
 }) {
   const [completedSteps, setCompletedSteps] = useState<string[]>([])
