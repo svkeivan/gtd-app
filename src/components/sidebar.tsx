@@ -4,6 +4,7 @@ import { logout } from "@/actions/auth";
 import { getProfile } from "@/actions/profile";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import {
   BarChart2,
@@ -40,7 +41,7 @@ type Profile = {
 
 export function Sidebar() {
   const pathname = usePathname();
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const { profile, setProfile } = useAppStore();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -63,8 +64,12 @@ export function Sidebar() {
       }
     };
 
-    fetchProfile();
-  }, []);
+    if (!profile) {
+      fetchProfile();
+    } else {
+      setIsLoading(false);
+    }
+  }, [profile, setProfile]);
 
   // Close mobile sidebar when route changes
   useEffect(() => {

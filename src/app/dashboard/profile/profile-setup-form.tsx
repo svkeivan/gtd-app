@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useAppStore } from "@/lib/store";
 import { ProfileFormData, profileSchema } from "@/types/profile-types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
@@ -30,6 +31,7 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_FILE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 export function ProfileSetupForm() {
+  const { setProfile } = useAppStore();
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -126,7 +128,8 @@ export function ProfileSetupForm() {
       // Optimistically update the form state
       form.reset(data);
 
-      await updateProfile(data);
+      const updatedProfile = await updateProfile(data);
+      setProfile(updatedProfile);
       setOriginalData(data);
       setSuccess(true);
       setError(null);
@@ -145,7 +148,7 @@ export function ProfileSetupForm() {
       <Card>
         <CardContent className="flex min-h-[400px] items-center justify-center p-6">
           <div className="space-y-4 text-center">
-            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
+            <div className="border-primary mx-auto h-8 w-8 animate-spin rounded-full border-b-2" />
             <p className="text-muted-foreground">Loading profile...</p>
           </div>
         </CardContent>
@@ -176,10 +179,11 @@ export function ProfileSetupForm() {
 
       const avatarPath = await uploadAvatar(formData);
       form.setValue("avatar", avatarPath);
-      
+
       // Save the profile with the new avatar
       const currentFormData = form.getValues();
-      await updateProfile(currentFormData);
+      const updatedProfile = await updateProfile(currentFormData);
+      setProfile(updatedProfile);
       setOriginalData(currentFormData);
       setSuccess(true);
       setError(null);
@@ -354,7 +358,9 @@ export function ProfileSetupForm() {
             <h3 className="text-lg font-medium">Break Preferences</h3>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="breakDuration">Short Break Duration (minutes)</Label>
+                <Label htmlFor="breakDuration">
+                  Short Break Duration (minutes)
+                </Label>
                 <Input
                   id="breakDuration"
                   type="number"
@@ -370,13 +376,17 @@ export function ProfileSetupForm() {
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="longBreakDuration">Long Break Duration (minutes)</Label>
+                <Label htmlFor="longBreakDuration">
+                  Long Break Duration (minutes)
+                </Label>
                 <Input
                   id="longBreakDuration"
                   type="number"
                   min="15"
                   max="60"
-                  {...form.register("longBreakDuration", { valueAsNumber: true })}
+                  {...form.register("longBreakDuration", {
+                    valueAsNumber: true,
+                  })}
                   className="max-w-md"
                 />
                 {form.formState.errors.longBreakDuration && (
@@ -386,13 +396,17 @@ export function ProfileSetupForm() {
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="pomodoroDuration">Focus Session Duration (minutes)</Label>
+                <Label htmlFor="pomodoroDuration">
+                  Focus Session Duration (minutes)
+                </Label>
                 <Input
                   id="pomodoroDuration"
                   type="number"
                   min="15"
                   max="60"
-                  {...form.register("pomodoroDuration", { valueAsNumber: true })}
+                  {...form.register("pomodoroDuration", {
+                    valueAsNumber: true,
+                  })}
                   className="max-w-md"
                 />
                 {form.formState.errors.pomodoroDuration && (
@@ -410,7 +424,9 @@ export function ProfileSetupForm() {
                   type="number"
                   min="1"
                   max="6"
-                  {...form.register("shortBreakInterval", { valueAsNumber: true })}
+                  {...form.register("shortBreakInterval", {
+                    valueAsNumber: true,
+                  })}
                   className="max-w-md"
                 />
                 {form.formState.errors.shortBreakInterval && (
@@ -458,15 +474,6 @@ export function ProfileSetupForm() {
               ) : (
                 "Save Changes"
               )}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="min-w-[120px]"
-              onClick={handleCancel}
-              disabled={!form.formState.isDirty || isSaving}
-            >
-              Reset
             </Button>
           </div>
         </form>
