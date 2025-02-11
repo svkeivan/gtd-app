@@ -16,7 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Item, Project } from "@prisma/client";
+import { getContexts } from "@/actions/contexts";
+import { getProjects } from "@/actions/projects";
+import { Context, Item, Project } from "@prisma/client";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { InboxForm } from "../../inbox/inbox-form";
@@ -40,6 +42,8 @@ export default function ProjectPage() {
     description: null,
     parentId: null,
   });
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [contexts, setContexts] = useState<Context[]>([]);
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -58,55 +62,73 @@ export default function ProjectPage() {
     fetchItems();
   }, [params.id]);
 
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [projectsData, contextsData] = await Promise.all([
+          getProjects(),
+          getContexts(),
+        ]);
+
+        setProjects(projectsData);
+        setContexts(contextsData);
+      } catch (error) {
+        console.error("Failed to load projects and contexts:", error);
+      }
+    };
+
+    loadData();
+  }, []);
+
   return (
     <div>
       <div className="mb-8 space-y-6">
-        <div className="rounded-xl bg-white p-8 shadow-lg transition-shadow hover:shadow-xl">
+        <div className="rounded-xl bg-card p-8 shadow-lg transition-shadow hover:shadow-xl">
           <div className="mb-6 flex items-center justify-between">
             <div>
-              <h1 className="text-4xl font-bold text-gray-800">
+              <h1 className="text-4xl font-bold text-foreground">
                 {project?.title}
               </h1>
               <div className="mt-2 flex items-center gap-4">
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-muted-foreground">
                   Created {project?.createdAt?.toLocaleDateString()}
                 </span>
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-muted-foreground">
                   Status: {project?.status || "Active"}
                 </span>
               </div>
               {project?.description && (
-                <p className="mt-4 text-gray-600">{project.description}</p>
+                <p className="mt-4 text-muted-foreground">{project.description}</p>
               )}
             </div>
             <button
               onClick={() => setShowModal(true)}
-              className="rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
+              className="rounded-lg bg-primary px-4 py-2 text-primary-foreground transition-colors hover:bg-primary/90"
             >
               Add Task
             </button>
           </div>
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            <div className="rounded-xl bg-blue-50 p-6 shadow-sm transition-all hover:bg-blue-100 hover:shadow">
-              <h3 className="text-lg font-semibold text-blue-700">
+            <div className="rounded-xl bg-blue-500/10 p-6 shadow-sm transition-all hover:bg-blue-500/20 hover:shadow dark:bg-blue-500/5">
+              <h3 className="text-lg font-semibold text-blue-700 dark:text-blue-400">
                 Total Items
               </h3>
-              <p className="text-3xl font-bold text-blue-800">{items.length}</p>
+              <p className="text-3xl font-bold text-blue-800 dark:text-blue-300">{items.length}</p>
             </div>
-            <div className="rounded-xl bg-green-50 p-6 shadow-sm transition-all hover:bg-green-100 hover:shadow">
-              <h3 className="text-lg font-semibold text-green-700">
+            <div className="rounded-xl bg-green-500/10 p-6 shadow-sm transition-all hover:bg-green-500/20 hover:shadow dark:bg-green-500/5">
+              <h3 className="text-lg font-semibold text-green-700 dark:text-green-400">
                 Completed Items
               </h3>
-              <p className="text-3xl font-bold text-green-800">
+              <p className="text-3xl font-bold text-green-800 dark:text-green-300">
                 {items.filter((item) => item.status === "COMPLETED").length}
               </p>
             </div>
-            <div className="rounded-xl bg-purple-50 p-6 shadow-sm transition-all hover:bg-purple-100 hover:shadow">
-              <h3 className="text-lg font-semibold text-purple-700">
+            <div className="rounded-xl bg-purple-500/10 p-6 shadow-sm transition-all hover:bg-purple-500/20 hover:shadow dark:bg-purple-500/5">
+              <h3 className="text-lg font-semibold text-purple-700 dark:text-purple-400">
                 Completion Rate
               </h3>
-              <p className="text-3xl font-bold text-purple-800">
+              <p className="text-3xl font-bold text-purple-800 dark:text-purple-300">
                 {items.length > 0
                   ? Math.round(
                       (items.filter((item) => item.status === "COMPLETED")
@@ -122,10 +144,10 @@ export default function ProjectPage() {
 
           <div className="mt-6">
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-600">
+              <span className="text-sm font-medium text-muted-foreground">
                 Overall Progress
               </span>
-              <span className="text-sm font-medium text-gray-600">
+              <span className="text-sm font-medium text-muted-foreground">
                 {items.length > 0
                   ? Math.round(
                       (items.filter((item) => item.status === "COMPLETED")
@@ -165,7 +187,7 @@ export default function ProjectPage() {
 
       <div className="mb-6 space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-3xl font-bold text-gray-800">Project Items</h2>
+          <h2 className="text-3xl font-bold text-foreground">Project Items</h2>
           <div className="flex items-center gap-4">
             <Input
               placeholder="Search tasks..."
@@ -203,10 +225,10 @@ export default function ProjectPage() {
       </div>
       <div>
         {items.length === 0 ? (
-          <div className="flex h-[200px] items-center justify-center rounded-xl border-2 border-dashed">
+          <div className="flex h-[200px] items-center justify-center rounded-xl border-2 border-dashed border-border">
             <div className="text-center">
-              <p className="text-lg font-medium text-gray-600">No tasks yet</p>
-              <p className="text-sm text-gray-500">
+              <p className="text-lg font-medium text-foreground">No tasks yet</p>
+              <p className="text-sm text-muted-foreground">
                 Add your first task to get started
               </p>
             </div>
@@ -241,7 +263,12 @@ export default function ProjectPage() {
                 }
               })
               .map((item) => (
-                <ItemCard item={item} key={item.id} />
+                <ItemCard
+                  item={item}
+                  key={item.id}
+                  projects={projects}
+                  contexts={contexts}
+                />
               ))}
           </div>
         )}

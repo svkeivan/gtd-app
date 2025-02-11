@@ -30,29 +30,40 @@ interface RecentItemsListProps {
 
 export function RecentItemsList({ items }: RecentItemsListProps) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Recent Items</CardTitle>
+    <Card className="sm:hover:shadow-md transition-shadow duration-200">
+      <CardHeader className="space-y-1.5 pb-4">
+        <CardTitle className="text-lg sm:text-xl">Recent Items</CardTitle>
       </CardHeader>
       <CardContent>
-        <ul className="space-y-4">
+        <ul className="space-y-3 sm:space-y-4">
           {items.map((item) => (
-            <li key={item.id} className="flex items-center justify-between">
-              <div>
+            <li 
+              key={item.id} 
+              className="flex flex-col gap-2 rounded-lg border p-3 sm:p-4 hover:bg-accent/50 transition-colors duration-200 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="min-w-0 space-y-1">
                 <Link
-                  href={`/process?id=${item.id}`}
-                  className="font-medium hover:underline"
+                  href={`/dashboard/process?id=${item.id}`}
+                  className="block font-medium text-sm sm:text-base hover:underline line-clamp-1"
                 >
                   {item.title}
                 </Link>
-                <div className="text-sm text-muted-foreground">
-                  {item.project && <span>Project: {item.project.title}</span>}
-                </div>
+                {item.project && (
+                  <div className="text-xs sm:text-sm text-muted-foreground line-clamp-1">
+                    Project: {item.project.title}
+                  </div>
+                )}
               </div>
-              <div className="flex items-center space-x-2">
-                <Badge>{item.status}</Badge>
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                <Badge className="text-xs sm:text-sm">
+                  {item.status}
+                </Badge>
                 {item.contexts.map((context) => (
-                  <Badge key={context.name} variant="outline">
+                  <Badge 
+                    key={context.name} 
+                    variant="outline"
+                    className="text-xs sm:text-sm"
+                  >
                     {context.name}
                   </Badge>
                 ))}

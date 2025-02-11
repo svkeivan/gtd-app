@@ -6,56 +6,65 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useAppStore } from '@/lib/store'
+import { createItem } from '@/actions/items'
 
-export function QuickAddForm({ userId }: { userId: string }) {
+export function QuickAddForm() {
   const [title, setTitle] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
   const router = useRouter()
   const addItem = useAppStore((state) => state.addItem)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!title.trim()) return
+    if (isLoading) return
+
+    setIsLoading(true)
+    setError('')
 
     try {
-      const response = await fetch('/api/items', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ title, userId }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to add item')
-      }
-
-      const newItem = await response.json()
+      const newItem = await createItem({ title })
       addItem(newItem)
       setTitle('')
       router.refresh()
     } catch (error) {
       console.error('Error adding item:', error)
+      setError(error instanceof Error ? error.message : 'Failed to add item')
+    } finally {
+      setIsLoading(false)
     }
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Quick Add</CardTitle>
+    <Card className="sm:hover:shadow-md transition-shadow duration-200">
+      <CardHeader className="space-y-1.5 pb-4">
+        <CardTitle className="text-lg sm:text-xl">Quick Add</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="flex space-x-2">
-          <Input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Add a new task..."
-            className="flex-grow"
-          />
-          <Button type="submit">Add</Button>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
+            <Input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Add a new task..."
+              className="flex-grow min-w-0"
+              disabled={isLoading}
+            />
+            <Button 
+              type="submit" 
+              disabled={isLoading}
+              className="sm:w-24"
+            >
+              {isLoading ? 'Adding...' : 'Add'}
+            </Button>
+          </div>
+          {error && (
+            <p className="text-xs sm:text-sm text-destructive">{error}</p>
+          )}
         </form>
       </CardContent>
     </Card>
   )
 }
-

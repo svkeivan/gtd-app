@@ -1,36 +1,157 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# GTD App - Task Management System
 
-## Getting Started
+A modern task management application built on GTD (Getting Things Done) principles, helping users organize tasks, projects, and commitments effectively.
 
-First, run the development server:
+## Overview
 
+GTD App is a comprehensive task management system that implements David Allen's Getting Things Done methodology. It provides a structured approach to organizing tasks, projects, and commitments while offering modern features like analytics, calendar integration, and team collaboration.
+
+## Key Features
+
+- 📥 Inbox for quick task capture
+- 📋 Project management with detailed tracking
+- 🔍 Context-based task organization
+- 📅 Calendar integration
+- 📊 Analytics and reporting
+- 🔄 Regular review system
+- 👥 Team collaboration features
+- 📱 Responsive design
+- 🌙 Dark mode support
+- ⌨️ Keyboard shortcuts
+- 🔒 Secure authentication
+- 💳 Subscription-based access
+
+## Tech Stack
+
+- **Frontend**: Next.js, React, TypeScript
+- **Styling**: Tailwind CSS, shadcn/ui
+- **State Management**: Zustand
+- **Database**: PostgreSQL with Prisma ORM
+- **Authentication**: Iron Session
+- **Forms**: React Hook Form, Zod
+- **Charts**: Recharts
+- **Calendar**: React Big Calendar
+- **Date Handling**: date-fns, moment
+- **Drag & Drop**: @hello-pangea/dnd
+
+## Documentation
+
+### For Users
+- [User Guide](docs/user-guide.md) - Complete guide to using the application
+- [FAQ](docs/faq.md) - Frequently asked questions
+- [Troubleshooting](docs/troubleshooting-guide.md) - Common issues and solutions
+
+### For Developers
+- [Technical Documentation](docs/technical-documentation.md) - System architecture and implementation details
+- [API Documentation](docs/api-documentation.md) - Complete API reference
+- [Contributing Guide](docs/contributing-guide.md) - How to contribute to the project
+- [Security Guide](docs/security-guide.md) - Security features and considerations
+- [Deployment Guide](docs/deployment-guide.md) - Deployment process and configuration
+
+## Quick Start
+
+1. Clone the repository:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/your-username/gtd-app.git
+cd gtd-app
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Install dependencies:
+```bash
+pnpm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Set up environment variables:
+```bash
+cp .env.example .env
+# Edit .env with your configuration
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Set up the database:
+```bash
+pnpx prisma generate
+pnpx prisma db push
+```
 
-## Learn More
+5. Start the development server:
+```bash
+pnpm dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+6. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Environment Variables
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+# Required environment variables
+DATABASE_URL=postgresql://user:password@localhost:5432/gtd_db
+NEXTAUTH_SECRET=your-auth-secret
+SESSION_SECRET=your-session-secret
+STRIPE_SECRET_KEY=your-stripe-secret
+STRIPE_WEBHOOK_SECRET=your-webhook-secret
+```
 
-## Deploy on Vercel
+## Scripts
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `pnpm dev` - Start development server
+- `pnpm build` - Build for production
+- `pnpm start` - Start production server
+- `pnpm lint` - Run ESLint
+- `pnpm test` - Run tests
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Project Structure
+
+```
+gtd-app/
+├── docs/               # Documentation files
+├── prisma/            # Database schema and migrations
+├── public/            # Static assets
+└── src/
+    ├── actions/       # Server actions
+    ├── app/          # Next.js app router pages
+    ├── components/   # React components
+    ├── lib/          # Utility functions
+    └── types/        # TypeScript types
+```
+
+## Contributing
+
+We welcome contributions! Please see our [Contributing Guide](docs/contributing-guide.md) for details.
+
+## Security
+
+For security issues, please see our [Security Guide](docs/security-guide.md) and contact security@gtd-app.com.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Support
+
+- Email: support@gtd-app.com
+- Issues: [GitHub Issues](https://github.com/your-username/gtd-app/issues)
+- Discord: [Join our community](https://discord.gg/gtd-app)
+
+## Acknowledgments
+
+- [Getting Things Done®](https://gettingthingsdone.com/) by David Allen
+- [Next.js](https://nextjs.org/) team
+- [Tailwind CSS](https://tailwindcss.com/) team
+- [shadcn/ui](https://ui.shadcn.com/) components
+- All our contributors
+
+## Version History
+
+See [CHANGELOG.md](CHANGELOG.md) for a list of changes.
+
+## Roadmap
+
+- [ ] Mobile applications
+- [ ] API integrations
+- [ ] Advanced team features
+- [ ] AI-powered suggestions
+- [ ] Custom workflows
+- [ ] Extended analytics
+
+---
+Built with ❤️ by the GTD App Team

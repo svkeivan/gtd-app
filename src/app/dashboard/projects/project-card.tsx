@@ -31,9 +31,9 @@ interface ProjectWithItems extends Project {
 }
 
 const statusColors = {
-  ACTIVE: "bg-green-500",
-  COMPLETED: "bg-blue-500",
-  ON_HOLD: "bg-yellow-500",
+  ACTIVE: "bg-green-500/50 dark:bg-green-500/30",
+  COMPLETED: "bg-blue-500/50 dark:bg-blue-500/30",
+  ON_HOLD: "bg-yellow-500/50 dark:bg-yellow-500/30",
 };
 
 const statusLabels = {
@@ -75,7 +75,7 @@ export function ProjectCard({ project }: { project: ProjectWithItems }) {
   return (
     <Card className="transition-shadow duration-200 hover:shadow-lg">
       <CardHeader className="pb-2">
-        <div className="flex items-start justify-between">
+        <div className="flex items-center justify-between">
           <div className="flex-1 space-y-1">
             {isEditing ? (
               <Input
@@ -89,13 +89,13 @@ export function ProjectCard({ project }: { project: ProjectWithItems }) {
                 {project.title}
               </CardTitle>
             )}
-            <Badge
-              variant="secondary"
-              className={`${statusColors[status as keyof typeof statusColors]}`}
-            >
-              {statusLabels[status as keyof typeof statusLabels]}
-            </Badge>
           </div>
+          <Badge
+            variant="secondary"
+            className={`${statusColors[status as keyof typeof statusColors]}`}
+          >
+            {statusLabels[status as keyof typeof statusLabels]}
+          </Badge>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -121,15 +121,15 @@ export function ProjectCard({ project }: { project: ProjectWithItems }) {
         ) : (
           <>
             {project.description && (
-              <p className="text-sm text-gray-600">{project.description}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{project.description}</p>
             )}
             <div className="space-y-2">
-              <div className="flex justify-between text-sm text-gray-600">
+              <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
                 <span>Progress</span>
                 <span>{Math.round(progress)}%</span>
               </div>
               <Progress value={progress} className="h-2" />
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 {completedItems} of {totalItems} tasks completed
               </p>
             </div>
@@ -150,10 +150,10 @@ export function ProjectCard({ project }: { project: ProjectWithItems }) {
           <>
             <Button
               variant="outline"
-              size="icon"
               onClick={() => router.push(`/dashboard/projects/${project.id}`)}
             >
               <ClipboardList className="h-4 w-4" />
+              Tasks
             </Button>
             <Button
               variant="outline"

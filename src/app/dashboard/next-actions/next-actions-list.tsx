@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { updateItemsPriority } from "@/actions/items";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { NextAction, useAppStore } from "@/lib/store";
+import { PriorityLevel } from "@prisma/client";
 import { ContextSummary, ProjectSummary } from "@/types/project-types";
 import {
   DragDropContext,
@@ -18,7 +19,7 @@ import {
   Droppable,
   DropResult,
 } from "@hello-pangea/dnd";
-import { Filter, Search, SortAsc } from "lucide-react";
+import { Search, SortAsc } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { NextActionCard } from "./next-action-card";
 
@@ -26,14 +27,12 @@ interface NextActionListProps {
   initialNextActions: NextAction[];
   projects: ProjectSummary[];
   contexts: ContextSummary[];
-  userId: string;
 }
 
 export function NextActionsList({
   initialNextActions,
   projects,
   contexts,
-  userId,
 }: NextActionListProps) {
   const { nextActions, setNextActions, reorderNextActions } = useAppStore();
   const [filterProject, setFilterProject] = useState("all");
@@ -41,7 +40,6 @@ export function NextActionsList({
   const [sortBy, setSortBy] = useState("priority");
   const [groupBy, setGroupBy] = useState("none");
   const [searchTerm, setSearchTerm] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     setNextActions(initialNextActions);
@@ -61,7 +59,13 @@ export function NextActionsList({
       .sort((a, b) => {
         switch (sortBy) {
           case "priority":
-            return a.priority - b.priority;
+            const priorityOrder = {
+              URGENT: 0,
+              HIGH: 1,
+              MEDIUM: 2,
+              LOW: 3,
+            };
+            return priorityOrder[a.priority] - priorityOrder[b.priority];
           case "title":
             return a.title.localeCompare(b.title);
           case "dueDate":
@@ -86,22 +90,29 @@ export function NextActionsList({
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
 
-    reorderNextActions(
-      items.map((item, index) => ({ ...item, priority: index })),
-    );
+    // Map index positions to priority levels
+    const indexToPriority = (index: number): PriorityLevel => {
+      if (index < items.length * 0.25) return "URGENT";
+      if (index < items.length * 0.5) return "HIGH";
+      if (index < items.length * 0.75) return "MEDIUM";
+      return "LOW";
+    };
+
+    const reorderedItems = items.map((item, index) => ({
+      ...item,
+      priority: indexToPriority(index),
+    }));
+
+    reorderNextActions(reorderedItems);
 
     // Update priorities on the server
     try {
-      await fetch("/api/items/reorder", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          items: items.map((item, index) => ({ id: item.id, priority: index })),
-          userId,
-        }),
-      });
+      await updateItemsPriority(
+        reorderedItems.map((item) => ({
+          id: item.id,
+          priority: item.priority,
+        })),
+      );
     } catch (error) {
       console.error("Error updating priorities:", error);
     }
@@ -148,13 +159,21 @@ export function NextActionsList({
             }
             break;
           case "priority":
-            const priority = action.priority || 0;
-            groupKey =
-              priority < 3
-                ? "High Priority"
-                : priority < 6
-                  ? "Medium Priority"
-                  : "Low Priority";
+            switch (action.priority) {
+              case "URGENT":
+                groupKey = "Urgent";
+                break;
+              case "HIGH":
+                groupKey = "High Priority";
+                break;
+              case "MEDIUM":
+                groupKey = "Medium Priority";
+                break;
+              case "LOW":
+              default:
+                groupKey = "Low Priority";
+                break;
+            }
             break;
         }
         if (!acc[groupKey]) acc[groupKey] = [];
@@ -190,43 +209,34 @@ export function NextActionsList({
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
-        <div className="relative max-w-md flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
-          <Input
-            type="text"
-            placeholder="Search actions..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+      <div className="mb-6 space-y-4 rounded-lg border  p-4">
+        <div className="flex items-center justify-between">
+          <div className="relative max-w-md flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+            <Input
+              type="text"
+              placeholder="Search actions..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-[140px]">
+                <SortAsc className="mr-2 h-4 w-4" />
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="priority">Priority</SelectItem>
+                <SelectItem value="title">Title</SelectItem>
+                <SelectItem value="dueDate">Due Date</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2"
-          >
-            <Filter className="h-4 w-4" />
-            Filters
-          </Button>
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="w-[140px]">
-              <SortAsc className="mr-2 h-4 w-4" />
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="priority">Priority</SelectItem>
-              <SelectItem value="title">Title</SelectItem>
-              <SelectItem value="dueDate">Due Date</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
 
-      {showFilters && (
-        <div className="mb-6 grid gap-4 rounded-lg border bg-gray-50/50 p-4 md:grid-cols-3">
+        <div className="grid gap-4 border-t pt-4 md:grid-cols-3">
           <div>
             <Label htmlFor="project-filter">Project</Label>
             <Select value={filterProject} onValueChange={setFilterProject}>
@@ -274,7 +284,8 @@ export function NextActionsList({
             </Select>
           </div>
         </div>
-      )}
+      </div>
+
       <div className="min-h-[200px]">
         <DragDropContext onDragEnd={onDragEnd}>
           <Droppable droppableId="next-actions">

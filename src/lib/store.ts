@@ -18,17 +18,59 @@ interface DashboardData {
   recentItems: Item[];
 }
 
+interface SubtaskWithTask {
+  id: string;
+  parentId: string;
+  taskId: string;
+  order: number;
+  task: Item;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface ChecklistItem {
+  id: string;
+  title: string;
+  completed: boolean;
+  order: number;
+  itemId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface NextAction extends Item {
   project?: Project | null;
   contexts?: Context[];
+  subtasks?: SubtaskWithTask[];
+  checklistItems?: ChecklistItem[];
 }
 
+interface Profile {
+  id: string;
+  name: string | null;
+  email: string;
+  language: string;
+  theme: string;
+  timezone: string;
+  avatar: string | null;
+  profileComplete: boolean;
+  workStartTime: string;
+  workEndTime: string;
+  lunchStartTime: string;
+  lunchDuration: number;
+  breakDuration: number;
+  longBreakDuration: number;
+  pomodoroDuration: number;
+  shortBreakInterval: number;
+}
 
 interface AppState {
   items: Item[];
   projects: Project[];
   contexts: ContextListWithItem[];
   nextActions: NextAction[];
+  profile: Profile | null;
+  setProfile: (profile: Profile | null) => void;
   setItems: (items: Item[]) => void;
   addItem: (item: Item) => void;
   removeItem: (id: string) => void;
@@ -60,6 +102,8 @@ export const useAppStore = create<AppState>((set) => ({
   projects: [],
   contexts: [],
   nextActions: [],
+  profile: null,
+  setProfile: (profile) => set({ profile }),
   setItems: (items) => set({ items }),
   addItem: (item) => set((state) => ({ items: [item, ...state.items] })),
   removeItem: (id) =>

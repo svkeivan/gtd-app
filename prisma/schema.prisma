@@ -11,18 +11,143 @@ datasource db {
 }
 
 model User {
+  id                String                @id @default(cuid())
+  email             String                @unique
+  password          String
+  name              String?
+  timezone          String                @default("UTC")
+  language          String                @default("en")
+  theme             String                @default("light")
+  avatar            String?
+  profileComplete   Boolean               @default(false)
+  maxProjects       Int                   @default(3) // Default limit for free tier
+  // Work schedule preferences
+  workStartTime     String                @default("09:00") // 24h format
+  workEndTime       String                @default("17:00") // 24h format
+  lunchStartTime    String                @default("12:00") // 24h format
+  lunchDuration     Int                   @default(60) // in minutes
+  breakDuration     Int                   @default(15) // in minutes
+  longBreakDuration Int                   @default(30) // in minutes
+  pomodoroDuration  Int                   @default(25) // in minutes
+  shortBreakInterval Int                  @default(3) // Take long break after this many short breaks
+  items             Item[]
+  projects          Project[]
+  contexts          Context[]
+  tags              Tag[]
+  reviews           Review[]
+  timeEntries       TimeEntry[]
+  focusSessions     FocusSession[]
+  breakSessions     BreakSession[]
+  dailyMetrics      DailyProductivity[]
+  comments          TaskComment[]
+  notifications     CommentNotification[]
+  auditLogs         AuditLog[]
+  subscription      Subscription?
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+}
+
+// New model for tracking focus (pomodoro) sessions
+model FocusSession {
   id          String      @id @default(cuid())
-  email       String      @unique
-  password    String
-  name        String?
-  items       Item[]
-  projects    Project[]
-  contexts    Context[]
-  tags        Tag[]
-  reviews     Review[]
-  timeEntries TimeEntry[]
+  startTime   DateTime
+  endTime     DateTime?
+  duration    Int         // Duration in minutes
+  completed   Boolean     @default(false)
+  interrupted Boolean     @default(false)
+  item        Item?       @relation(fields: [itemId], references: [id])
+  itemId      String?
+  user        User        @relation(fields: [userId], references: [id])
+  userId      String
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
+}
+
+// New model for tracking break sessions
+model BreakSession {
+  id          String      @id @default(cuid())
+  startTime   DateTime
+  endTime     DateTime?
+  duration    Int         // Duration in minutes
+  type        BreakType
+  completed   Boolean     @default(false)
+  skipped     Boolean     @default(false)
+  user        User        @relation(fields: [userId], references: [id])
+  userId      String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+enum BreakType {
+  SHORT
+  LONG
+  LUNCH
+}
+
+// New model for tracking daily productivity metrics
+model DailyProductivity {
+  id                    String   @id @default(cuid())
+  date                  DateTime
+  user                  User     @relation(fields: [userId], references: [id])
+  userId                String
+  focusSessionsCount    Int      @default(0)
+  focusMinutes         Int      @default(0)
+  completedTasks       Int      @default(0)
+  breakAdherence       Float    @default(0) // Percentage of breaks taken vs scheduled
+  productivity         Float    @default(0) // Overall productivity score
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@unique([userId, date])
+}
+
+enum SubscriptionPlan {
+  FREE
+  PERSONAL
+  PROFESSIONAL
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  CANCELED
+  PAST_DUE
+  UNPAID
+}
+
+model Subscription {
+  id                  String            @id @default(cuid())
+  userId              String            @unique
+  user                User              @relation(fields: [userId], references: [id])
+  plan                SubscriptionPlan  @default(FREE)
+  status              SubscriptionStatus @default(TRIALING)
+  trialEndsAt         DateTime?
+  currentPeriodStart  DateTime
+  currentPeriodEnd    DateTime
+  cancelAtPeriodEnd   Boolean          @default(false)
+  stripeCustomerId    String?          @unique
+  stripeSubscriptionId String?         @unique
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+}
+
+enum AuditAction {
+  PROFILE_UPDATE
+  PROFILE_VIEW
+  SUBSCRIPTION_UPDATED
+  SUBSCRIPTION_CANCELED
+  TRIAL_STARTED
+  TRIAL_ENDED
+}
+
+model AuditLog {
+  id        String      @id @default(cuid())
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  action    AuditAction
+  details   String      @db.Text
+  createdAt DateTime    @default(now())
 }
 
 enum ItemStatus {
@@ -37,24 +162,101 @@ enum ItemStatus {
   TRASHED
 }
 
+enum PriorityLevel {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
 model Item {
-  id          String      @id @default(cuid())
-  title       String
-  notes       String?
-  status      ItemStatus  @default(INBOX)
-  priority    Int         @default(0)
-  dueDate     DateTime?
-  plannedDate DateTime?
-  estimated   Int?
-  contexts    Context[]
-  project     Project?    @relation(fields: [projectId], references: [id])
-  projectId   String?
-  user        User        @relation(fields: [userId], references: [id])
-  userId      String
-  tags        Tag[]
-  TimeEntry   TimeEntry[]
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id            String           @id @default(cuid())
+  title         String
+  notes         String?
+  status        ItemStatus       @default(INBOX)
+  priority      PriorityLevel    @default(MEDIUM)
+  dueDate       DateTime?
+  plannedDate   DateTime?
+  estimated     Int?             @db.Integer // Store in minutes (5-480)
+  requiresFocus Boolean          @default(false)
+  contexts      Context[]
+  project       Project?         @relation(fields: [projectId], references: [id])
+  projectId     String?
+  user          User             @relation(fields: [userId], references: [id])
+  userId        String
+  tags          Tag[]
+  TimeEntry     TimeEntry[]
+  focusSessions FocusSession[]
+  comments      TaskComment[]
+  dependsOn     TaskDependency[] @relation("DependentTask")
+  blocks        TaskDependency[] @relation("BlockerTask")
+  subtasks      Subtask[]        @relation("ParentTask")
+  parentTask    Subtask?         @relation("SubTask")
+  checklistItems ChecklistItem[]
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+}
+
+model Subtask {
+  id           String   @id @default(cuid())
+  parentId     String
+  parentTask   Item     @relation("ParentTask", fields: [parentId], references: [id], onDelete: Cascade)
+  taskId       String   @unique
+  task         Item     @relation("SubTask", fields: [taskId], references: [id], onDelete: Cascade)
+  order        Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model ChecklistItem {
+  id        String   @id @default(cuid())
+  title     String
+  completed Boolean  @default(false)
+  order     Int      @default(0)
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  itemId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum CommentType {
+  COMMENT
+  STATUS_CHANGE
+  PRIORITY_CHANGE
+  ESTIMATE_CHANGE
+  DEPENDENCY_ADDED
+  DEPENDENCY_REMOVED
+}
+
+model TaskComment {
+  id            String                @id @default(cuid())
+  content       String                @db.Text
+  taskId        String
+  userId        String
+  type          CommentType
+  createdAt     DateTime              @default(now())
+  task          Item                  @relation(fields: [taskId], references: [id])
+  user          User                  @relation(fields: [userId], references: [id])
+  notifications CommentNotification[]
+}
+
+model CommentNotification {
+  id        String      @id @default(cuid())
+  commentId String
+  userId    String
+  read      Boolean     @default(false)
+  createdAt DateTime    @default(now())
+  comment   TaskComment @relation(fields: [commentId], references: [id])
+  user      User        @relation(fields: [userId], references: [id])
+}
+
+model TaskDependency {
+  id              String   @id @default(cuid())
+  dependentTaskId String
+  blockerTaskId   String
+  createdAt       DateTime @default(now())
+  dependentTask   Item     @relation("DependentTask", fields: [dependentTaskId], references: [id])
+  blockerTask     Item     @relation("BlockerTask", fields: [blockerTaskId], references: [id])
 }
 
 model Project {
@@ -73,14 +275,24 @@ model Project {
 }
 
 model Context {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  items       Item[]
-  user        User     @relation(fields: [userId], references: [id])
-  userId      String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  items           Item[]
+  user            User     @relation(fields: [userId], references: [id])
+  userId          String
+  // Schedule fields
+  mondayEnabled    Boolean  @default(false)
+  tuesdayEnabled   Boolean  @default(false)
+  wednesdayEnabled Boolean  @default(false)
+  thursdayEnabled  Boolean  @default(false)
+  fridayEnabled    Boolean  @default(false)
+  saturdayEnabled  Boolean  @default(false)
+  sundayEnabled    Boolean  @default(false)
+  startTime        String   @default("09:00")
+  endTime          String   @default("17:00")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model Tag {
@@ -108,8 +320,9 @@ model TimeEntry {
   startTime DateTime
   endTime   DateTime?
   duration  Int // Duration in minutes
-  item      Item      @relation(fields: [itemId], references: [id])
-  itemId    String
+  category  String?
+  item      Item?     @relation(fields: [itemId], references: [id])
+  itemId    String?
   user      User      @relation(fields: [userId], references: [id])
   userId    String
   note      String?

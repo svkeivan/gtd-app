@@ -3,9 +3,7 @@ import { getInboxCount, getItemToProcess } from "@/actions/items";
 import { getProjects } from "@/actions/projects";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { auth } from "@/lib/auth";
 import { CheckCircle2, InboxIcon } from "lucide-react";
-import { redirect } from "next/navigation";
 import { ProcessForm } from "./process-form";
 
 export default async function ProcessPage({
@@ -13,21 +11,16 @@ export default async function ProcessPage({
 }: {
   searchParams: Promise<{ id?: string }>;
 }) {
-  const { user } = await auth();
-  if (!user || !user.isLoggedIn) {
-    redirect("/login");
-  }
-
   const Params = await searchParams;
   const { id: itemId } = Params;
   const item = itemId
     ? await getItemToProcess(itemId)
-    : await getItemToProcess(user.id);
+    : await getItemToProcess();
 
   const [projects, contexts, totalInbox] = await Promise.all([
-    getProjects(user.id),
-    getContexts(user.id),
-    getInboxCount(user.id),
+    getProjects(),
+    getContexts(),
+    getInboxCount(),
   ]);
 
   if (!item) {

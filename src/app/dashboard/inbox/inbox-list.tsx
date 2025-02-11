@@ -1,22 +1,47 @@
 "use client";
 
 import { useAppStore } from "@/lib/store";
-import { Item } from "@prisma/client";
+import { getContexts } from "@/actions/contexts";
+import { getProjects } from "@/actions/projects";
 import { useEffect, useState } from "react";
 import { ItemCard } from "./item-card";
 
+import { Context, Item, Project } from "@prisma/client";
+
 export function InboxList({ initialItems }: { initialItems: Item[] }) {
   const { items, setItems } = useAppStore();
-  const [status, setStatus] = useState<string>("all");
+  const [status, setStatus] = useState<string>("INBOX");
+  const [search, setSearch] = useState<string>("");
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [contexts, setContexts] = useState<Context[]>([]);
+
   useEffect(() => {
     setItems(initialItems);
-  }, [initialItems, setItems]);
+  }, [initialItems]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [projectsData, contextsData] = await Promise.all([
+          getProjects(),
+          getContexts(),
+        ]);
+
+        setProjects(projectsData);
+        setContexts(contextsData);
+      } catch (error) {
+        console.error("Failed to load projects and contexts:", error);
+      }
+    };
+
+    loadData();
+  }, []);
 
   const statusValues = ["all", ...new Set(items.map((item) => item.status))];
 
   const filteredItems = items.filter((item) => {
-    if (status === "all") return true;
-    return item.status === status;
+    if (status === "all") return item.title.toLowerCase().includes(search.toLowerCase());
+    return item.status === status && item.title.toLowerCase().includes(search.toLowerCase());
   });
 
   return (
@@ -29,6 +54,13 @@ export function InboxList({ initialItems }: { initialItems: Item[] }) {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <input
+            type="text"
+            placeholder="Search items..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+          />
           <span className="text-sm text-muted-foreground">
             Filter by status:
           </span>
@@ -50,7 +82,12 @@ export function InboxList({ initialItems }: { initialItems: Item[] }) {
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {filteredItems.map((item) => (
-          <ItemCard key={item.id} item={item} />
+          <ItemCard
+            key={item.id}
+            item={item}
+            projects={projects}
+            contexts={contexts}
+          />
         ))}
       </div>
     </div>

@@ -1,15 +1,10 @@
 import { getInboxItems } from "@/actions/items";
-import { auth } from "@/lib/auth";
 import { InboxForm } from "./inbox-form";
 import { InboxList } from "./inbox-list";
 
 export default async function InboxPage() {
-  const session = await auth();
-  if (!session?.user) {
-    return <div>Please sign in to view your inbox.</div>;
-  }
 
-  const items = await getInboxItems(session.user.id);
+  const items = await getInboxItems();
 
   return (
     <div className="container mx-auto space-y-8 p-6">

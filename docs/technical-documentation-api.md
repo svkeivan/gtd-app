@@ -1,0 +1,57 @@
+## API Reference and Endpoints
+
+The application uses server actions to handle API requests. The following endpoints are available:
+
+-   **/api/auth/login**: POST - Logs in a user.
+-   **/api/auth/register**: POST - Registers a new user.
+-   **/api/auth/logout**: POST - Logs out a user.
+-   **/api/auth/session**: GET - Retrieves the current user session.
+-   **/api/profile**: GET - Retrieves the user profile.
+-   **/api/profile**: PUT - Updates the user profile.
+-   **/api/subscription**: GET - Retrieves the user's subscription details.
+-   **/api/subscription/cancel**: POST - Cancels the user's subscription.
+-   **/api/subscription/reactivate**: POST - Reactivates the user's subscription.
+-   **/api/contexts**: GET - Retrieves a list of contexts.
+-   **/api/contexts**: POST - Creates a new context.
+-   **/api/contexts/:id**: PUT - Updates an existing context.
+-   **/api/contexts/:id**: DELETE - Deletes a context.
+-   **/api/items**: POST - Creates a new item (task).
+-   **/api/items**: GET - Retrieves inbox items.
+-   **/api/items/:id/comments**: POST - Adds a comment to an item.
+-   **/api/items/:id/comments**: GET - Retrieves comments for an item.
+-   **/api/items/:id/process**: POST - Processes an item.
+-   **/api/items/next-actions**: GET - Retrieves next actions.
+-   **/api/items/:id/status**: PUT - Updates the status of an item.
+-   **/api/items/next-actions-with-details**: GET - Retrieves next actions with details.
+-   **/api/items/to-process**: GET - Retrieves an item to process.
+-   **/api/items/of-project/:id**: GET - Retrieves items of a project.
+-   **/api/items/:id/subtasks**: POST - Adds a subtask to an item.
+-   **/api/items/:id/subtasks/:subtaskId**: DELETE - Removes a subtask from an item.
+-   **/api/items/:id/subtasks/reorder**: PUT - Reorders subtasks of an item.
+-   **/api/items/:id/checklist-items**: POST - Adds a checklist item to an item.
+-   **/api/items/:id/checklist-items/:checklistItemId**: PUT - Updates a checklist item.
+-   **/api/items/:id/checklist-items/:checklistItemId**: DELETE - Removes a checklist item.
+-   **/api/items/:id/checklist-items/reorder**: PUT - Reorders checklist items.
+-   **/api/items/:id**: PUT - Updates an item.
+-   **/api/items/:id/dependencies**: POST - Adds a dependency to an item.
+-   **/api/items/:id/dependencies/:blockerTaskId**: DELETE - Removes a dependency from an item.
+-   **/api/items/next**: GET - Retrieves next items.
+-   **/api/items/:id/planning**: PUT - Updates item planning.
+-   **/api/items/priority**: PUT - Updates items priority.
+-   **/api/projects**: GET - Retrieves a list of projects.
+-   **/api/projects/:id**: GET - Retrieves a project by ID.
+-   **/api/projects**: POST - Creates a new project.
+-   **/api/projects/:id**: PUT - Updates an existing project.
+-   **/api/projects/:id**: DELETE - Deletes a project.
+-   **/api/reviews/items**: GET - Retrieves review items.
+-   **/api/reviews/complete**: POST - Completes a weekly review.
+-   **/api/reviews/last-date**: GET - Retrieves the last review date.
+-   **/api/tags**: GET - Retrieves a list of tags.
+-   **/api/tags**: POST - Creates a new tag.
+-   **/api/tags/:id**: PUT - Updates an existing tag.
+-   **/api/tags/:id**: DELETE - Deletes a tag.
+-   **/api/tasks/uncompleted**: GET - Retrieves uncompleted tasks.
+-   **/api/time-entries/next-actions**: GET - Retrieves next action items for time tracking.
+-   **/api/time-entries**: POST - Creates a new time entry.
+-   **/api/time-entries**: GET - Retrieves time entries for a date.
+-   **/api/time-entries/report**: GET - Retrieves a time entries report.

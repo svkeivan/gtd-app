@@ -2,24 +2,23 @@
 
 import { processItem } from "@/actions/items";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useAppStore } from "@/lib/store";
-import { Context, Item, ItemStatus, Project } from "@prisma/client";
-import { CalendarIcon, Loader2, NotebookIcon } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Context, Item, ItemStatus, Project, Subtask, ChecklistItem } from "@prisma/client";
+import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { ProcessHeader } from "./components/process-header";
+import { StatusSelector } from "./components/status-selector";
+import { TaskDetails } from "./components/task-details";
+import { ItemDescription } from "./components/item-description";
+import { OrganizeSection } from "./components/organize-section";
+import { CommentsSection } from "./components/comments-section";
+import { addChecklistItem, addSubtask, removeChecklistItem, removeSubtask, updateChecklistItem } from "@/actions/items";
 
 interface ItemWithContext extends Item {
   contexts: Context[];
+  subtasks?: Array<Subtask & { task: Item }>;
+  checklistItems?: ChecklistItem[];
 }
 
 export function ProcessForm({
@@ -31,17 +30,34 @@ export function ProcessForm({
   projects: Project[];
   contexts: Context[];
 }) {
-  const [status, setStatus] = useState<ItemStatus>((item.status as ItemStatus) || "INBOX");
+  const [status, setStatus] = useState<ItemStatus>(
+    (item.status as ItemStatus) || "INBOX",
+  );
   const [projectId, setProjectId] = useState((item.projectId as string) || "");
   const [contextId, setContextId] = useState(
     (item.contexts[0]?.id as string) || "",
   );
+  const [description, setDescription] = useState(item.notes || "");
+  const [estimate, setEstimate] = useState(item.estimated?.toString() || "");
+  const [dueDate, setDueDate] = useState<Date | undefined>(
+    item.dueDate ? new Date(item.dueDate) : undefined,
+  );
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState("");
+  const [progress, setProgress] = useState(0);
   const router = useRouter();
-  const { removeItem } = useAppStore();
 
   const currentProject = projects.find((p) => p.id === item.projectId);
+
+  // Calculate progress
+  useEffect(() => {
+    let completed = 0;
+    if (status) completed += 25;
+    if (description) completed += 25;
+    if (estimate) completed += 25;
+    if (projectId || contextId) completed += 25;
+    setProgress(completed);
+  }, [status, description, estimate, projectId, contextId]);
 
   // Add keyboard shortcuts
   useEffect(() => {
@@ -89,10 +105,22 @@ export function ProcessForm({
       setIsProcessing(true);
       setError("");
       const contextIds = contextId ? [contextId] : [];
-      await processItem(item.id as string, { status, projectId, contextIds });
-      removeItem(item.id as string);
-      router.refresh();
-      router.push("/inbox");
+      await processItem(item.id as string, {
+        status,
+        projectId,
+        contextIds,
+        notes: description,
+        estimated: estimate ? parseInt(estimate) : undefined,
+        dueDate,
+      });
+      // Clear form
+      setStatus("INBOX");
+      setProjectId("");
+      setContextId("");
+      setDescription("");
+      setEstimate("");
+      setDueDate(undefined);
+      router.push("/dashboard/process");
     } catch (err) {
       setError(
         `Failed to process item: ${err instanceof Error ? err.message : "Please try again"}`,
@@ -102,211 +130,98 @@ export function ProcessForm({
     }
   };
 
+  const handleAddSubtask = async (title: string) => {
+    try {
+      await addSubtask(item.id, { title });
+      router.refresh();
+    } catch (error) {
+      console.error("Failed to add subtask:", error);
+    }
+  };
+
+  const handleRemoveSubtask = async (subtaskId: string) => {
+    try {
+      await removeSubtask(item.id, subtaskId);
+      router.refresh();
+    } catch (error) {
+      console.error("Failed to remove subtask:", error);
+    }
+  };
+
+  const handleAddChecklistItem = async (title: string) => {
+    try {
+      await addChecklistItem(item.id, title);
+      router.refresh();
+    } catch (error) {
+      console.error("Failed to add checklist item:", error);
+    }
+  };
+
+  const handleToggleChecklistItem = async (id: string, completed: boolean) => {
+    try {
+      await updateChecklistItem(id, { completed });
+      router.refresh();
+    } catch (error) {
+      console.error("Failed to update checklist item:", error);
+    }
+  };
+
+  const handleRemoveChecklistItem = async (id: string) => {
+    try {
+      await removeChecklistItem(id);
+      router.refresh();
+    } catch (error) {
+      console.error("Failed to remove checklist item:", error);
+    }
+  };
+
   return (
-    <Card className="transition-all duration-200 hover:shadow-md">
-      <CardHeader className="border-b pb-6">
-        <div className="flex items-start justify-between">
-          <div className="space-y-2">
-            <CardTitle className="text-2xl font-bold">
-              {item.title as string}
-            </CardTitle>
-            {item.notes && (
-              <p className="max-w-2xl whitespace-pre-wrap text-muted-foreground">
-                {item.notes as string}
-              </p>
-            )}
-          </div>
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <div className="flex items-center gap-1">
-              <CalendarIcon className="h-4 w-4" />
-              {new Date(item.createdAt).toLocaleDateString()}
-            </div>
-            {currentProject && (
-              <div className="flex items-center gap-1">
-                <NotebookIcon className="h-4 w-4" />
-                {currentProject.title}
-              </div>
-            )}
-          </div>
-        </div>
-      </CardHeader>
+    <Card className="mx-auto max-w-4xl transition-all duration-200 hover:shadow-md">
+      <ProcessHeader
+        title={item.title}
+        notes={item.notes}
+        createdAt={item.createdAt}
+        progress={progress}
+        currentProject={currentProject}
+      />
       <CardContent className="pt-6">
-        <form onSubmit={handleSubmit} className="space-y-8">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label className="text-lg font-semibold">Process as</Label>
-              <span className="text-sm text-muted-foreground">
-                Press key in (brackets) for quick selection
-              </span>
-            </div>
-            {error && <div className="text-sm text-destructive">{error}</div>}
-            <RadioGroup onValueChange={(value) => setStatus(value as ItemStatus)} required value={status}>
-              <div className="grid grid-cols-3 gap-4">
-                <div
-                  className={`rounded-lg border p-4 transition-all duration-200 hover:border-primary hover:bg-primary/5 ${
-                    status === "NEXT_ACTION"
-                      ? "border-primary bg-primary/10"
-                      : ""
-                  }`}
-                >
-                  <Label
-                    htmlFor="next_action"
-                    className="flex items-center space-x-2"
-                  >
-                    <RadioGroupItem value="NEXT_ACTION" id="next_action" />
-                    <span>
-                      Next Action{" "}
-                      <span className="text-xs text-muted-foreground">(N)</span>
-                    </span>
-                  </Label>
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Actionable task that can be done immediately
-                  </p>
-                </div>
-                <div
-                  className={`rounded-lg border p-4 transition-all duration-200 hover:border-primary hover:bg-primary/5 ${
-                    status === "PROJECT" ? "border-primary bg-primary/10" : ""
-                  }`}
-                >
-                  <Label
-                    htmlFor="project"
-                    className="flex items-center space-x-2"
-                  >
-                    <RadioGroupItem value="PROJECT" id="project" />
-                    <span>
-                      Project{" "}
-                      <span className="text-xs text-muted-foreground">(P)</span>
-                    </span>
-                  </Label>
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Requires multiple steps to complete
-                  </p>
-                </div>
-                <div
-                  className={`rounded-lg border p-4 transition-all duration-200 hover:border-primary hover:bg-primary/5 ${
-                    status === "WAITING_FOR"
-                      ? "border-primary bg-primary/10"
-                      : ""
-                  }`}
-                >
-                  <Label
-                    htmlFor="waiting_for"
-                    className="flex items-center space-x-2"
-                  >
-                    <RadioGroupItem value="WAITING_FOR" id="waiting_for" />
-                    <span>
-                      Waiting For{" "}
-                      <span className="text-xs text-muted-foreground">(W)</span>
-                    </span>
-                  </Label>
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Delegated or awaiting external input
-                  </p>
-                </div>
-                <div
-                  className={`rounded-lg border p-4 transition-all duration-200 hover:border-primary hover:bg-primary/5 ${
-                    status === "SOMEDAY_MAYBE"
-                      ? "border-primary bg-primary/10"
-                      : ""
-                  }`}
-                >
-                  <Label
-                    htmlFor="someday_maybe"
-                    className="flex items-center space-x-2"
-                  >
-                    <RadioGroupItem value="SOMEDAY_MAYBE" id="someday_maybe" />
-                    <span>
-                      Someday/Maybe{" "}
-                      <span className="text-xs text-muted-foreground">(S)</span>
-                    </span>
-                  </Label>
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Future consideration, not urgent
-                  </p>
-                </div>
-                <div
-                  className={`rounded-lg border p-4 transition-all duration-200 hover:border-primary hover:bg-primary/5 ${
-                    status === "REFERENCE" ? "border-primary bg-primary/10" : ""
-                  }`}
-                >
-                  <Label
-                    htmlFor="reference"
-                    className="flex items-center space-x-2"
-                  >
-                    <RadioGroupItem value="REFERENCE" id="reference" />
-                    <span>
-                      Reference{" "}
-                      <span className="text-xs text-muted-foreground">(R)</span>
-                    </span>
-                  </Label>
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Information to keep for future reference
-                  </p>
-                </div>
-                <div
-                  className={`rounded-lg border p-4 transition-all duration-200 hover:border-primary hover:bg-primary/5 ${
-                    status === "COMPLETED" ? "border-primary bg-primary/10" : ""
-                  }`}
-                >
-                  <Label
-                    htmlFor="completed"
-                    className="flex items-center space-x-2"
-                  >
-                    <RadioGroupItem value="COMPLETED" id="completed" />
-                    <span>
-                      Completed{" "}
-                      <span className="text-xs text-muted-foreground">(C)</span>
-                    </span>
-                  </Label>
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Task has been finished
-                  </p>
-                </div>
-              </div>
-            </RadioGroup>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <StatusSelector
+            status={status}
+            error={error}
+            onStatusChange={setStatus}
+          />
+          
+          <TaskDetails
+            subtasks={item.subtasks || []}
+            checklistItems={item.checklistItems || []}
+            onAddSubtask={handleAddSubtask}
+            onRemoveSubtask={handleRemoveSubtask}
+            onAddChecklistItem={handleAddChecklistItem}
+            onToggleChecklistItem={handleToggleChecklistItem}
+            onRemoveChecklistItem={handleRemoveChecklistItem}
+          />
+
+          <div className="space-y-4 rounded-lg bg-muted/30 p-4">
+            <ItemDescription
+              description={description}
+              estimate={estimate}
+              dueDate={dueDate}
+              onDescriptionChange={setDescription}
+              onEstimateChange={setEstimate}
+              onDueDateChange={setDueDate}
+            />
           </div>
-          <div className="flex gap-4">
-            <div className="flex-1 space-y-2">
-              <Label htmlFor="project_select" className="text-lg">
-                Project (optional)
-              </Label>
-              <Select value={projectId} onValueChange={setProjectId}>
-                <SelectTrigger id="project_select">
-                  <SelectValue placeholder="Select a project" />
-                </SelectTrigger>
-                <SelectContent>
-                  {projects.map((project) => (
-                    <SelectItem
-                      key={project.id as string}
-                      value={project.id as string}
-                    >
-                      {project.title as string}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex-1 space-y-2">
-              <Label htmlFor="context_select" className="text-lg">
-                Context (optional)
-              </Label>
-              <Select value={contextId} onValueChange={setContextId}>
-                <SelectTrigger id="context_select">
-                  <SelectValue placeholder="Select a context" />
-                </SelectTrigger>
-                <SelectContent>
-                  {contexts.map((context) => (
-                    <SelectItem
-                      key={context.id as string}
-                      value={context.id as string}
-                    >
-                      {context.name as string}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+
+          <OrganizeSection
+            projectId={projectId}
+            contextId={contextId}
+            projects={projects}
+            contexts={contexts}
+            onProjectChange={setProjectId}
+            onContextChange={setContextId}
+          />
+
           <Button
             type="submit"
             className="w-full"
@@ -323,6 +238,8 @@ export function ProcessForm({
           </Button>
         </form>
       </CardContent>
+      
+      <CommentsSection itemId={item.id} />
     </Card>
   );
 }
