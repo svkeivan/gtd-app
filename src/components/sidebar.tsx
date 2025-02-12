@@ -137,6 +137,12 @@ export function Sidebar() {
       icon: BarChart2,
       category: "tools",
     },
+    {
+      href: "/dashboard/habits",
+      label: "Habits",
+      icon: Sprout,
+      category: "tools",
+    },
   ];
 
   const categories = {

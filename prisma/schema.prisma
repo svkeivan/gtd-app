@@ -43,6 +43,7 @@ model User {
   notifications     CommentNotification[]
   auditLogs         AuditLog[]
   subscription      Subscription?
+  habits            Habit[]
   createdAt         DateTime              @default(now())
   updatedAt         DateTime              @updatedAt
 }
@@ -95,10 +96,21 @@ model DailyProductivity {
   completedTasks       Int      @default(0)
   breakAdherence       Float    @default(0) // Percentage of breaks taken vs scheduled
   productivity         Float    @default(0) // Overall productivity score
+  metrics             DailyMetric[]
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
   @@unique([userId, date])
+}
+
+model DailyMetric {
+  id        String   @id @default(cuid())
+  name      String
+  value     String? // Store value as string to accommodate different data types
+  dailyProductivity   DailyProductivity    @relation(fields: [dailyProductivityId], references: [id])
+  dailyProductivityId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum SubscriptionPlan {
@@ -328,4 +340,29 @@ model TimeEntry {
   note      String?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+}
+
+model Habit {
+  id        String   @id @default(cuid())
+  name      String
+  description String?
+  frequency Int @default(1) // How many times per day/week/month
+  period String @default("day") // day, week, month
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  logs      HabitLog[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model HabitLog {
+  id        String   @id @default(cuid())
+  habit     Habit    @relation(fields: [habitId], references: [id])
+  habitId   String
+  date      DateTime @default(now()) @db.Date // Only date part
+  completed Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([habitId, date])
 }

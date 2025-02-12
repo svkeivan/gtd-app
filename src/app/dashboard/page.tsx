@@ -7,6 +7,8 @@ import { DashboardSummary } from "./dashboard-summary";
 import { QuickAddForm } from "./quick-add-form";
 import { RecentItemsList } from "./recent-items-list";
 import { TodaysTasksList } from "./todays-tasks-list";
+import { HabitList } from "./habits/habit-list";
+import { HabitForm } from "./habits/habit-form";
 
 interface DashboardData {
   inboxCount: number;
@@ -101,7 +103,6 @@ export default async function DashboardPage() {
 
       <div className="grid gap-4 sm:gap-6 lg:grid-cols-7">
         <div className="space-y-4 sm:space-y-6 lg:col-span-4">
-          <QuickAddForm />
 
           <Card>
             <CardHeader className="space-y-1.5 pb-4">
@@ -121,9 +122,12 @@ export default async function DashboardPage() {
           </Card>
 
           <DashboardSummary data={dashboardData} />
+          <HabitList />
         </div>
 
-        <div className="lg:col-span-3">
+        <div className="lg:col-span-3 flex flex-col gap-4">
+          <QuickAddForm />
+          <HabitForm />
           <TodaysTasksList tasks={dashboardData.todaysTasks} />
           <RecentItemsList items={dashboardData.recentItems} />
         </div>
