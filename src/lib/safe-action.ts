@@ -1,6 +1,5 @@
 import { auth } from "./auth";
 import {
-  AppError,
   AuthenticationError,
   formatErrorResponse,
   logError,
