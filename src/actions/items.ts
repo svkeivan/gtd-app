@@ -9,10 +9,35 @@ import {
 } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { cache } from "react";
+import { createSafeAction } from "@/lib/safe-action";
+import {
+  AuthenticationError,
+  NotFoundError,
+  ValidationError,
+  handlePrismaError,
+} from "@/lib/errors";
 
 const prisma = new PrismaClient();
 
-export async function createItem(data: {
+// Helper functions
+async function getNextSubtaskOrder(parentId: string): Promise<number> {
+  const lastSubtask = await prisma.subtask.findFirst({
+    where: { parentId },
+    orderBy: { order: "desc" },
+  });
+  return (lastSubtask?.order ?? -1) + 1;
+}
+
+async function getNextChecklistItemOrder(itemId: string): Promise<number> {
+  const lastItem = await prisma.checklistItem.findFirst({
+    where: { itemId },
+    orderBy: { order: "desc" },
+  });
+  return (lastItem?.order ?? -1) + 1;
+}
+
+// Base implementations
+async function createItemImpl(data: {
   title: string;
   notes?: string;
   projectId?: string;
@@ -20,117 +45,135 @@ export async function createItem(data: {
   estimated?: number;
   requiresFocus?: boolean;
 }) {
-  const { user } = await auth();
-  if (!user) {
-    throw new Error("User not found");
+  if (!data.title.trim()) {
+    throw new ValidationError("Title is required");
   }
 
   // Validate estimated time if provided
   if (data.estimated) {
+    if (data.estimated < 5 || data.estimated > 480) {
+      throw new ValidationError("Estimated time must be between 5 and 480 minutes");
+    }
     data.estimated = Math.min(Math.max(data.estimated, 5), 480);
   }
 
-  const item = await prisma.item.create({
-    data: {
-      title: data.title,
-      notes: data.notes,
-      status: data.projectId ? "PROJECT" : "INBOX",
-      projectId: data.projectId ?? null,
-      userId: user.id,
-      priority: data.priority ?? "MEDIUM",
-      estimated: data.estimated,
-      requiresFocus: data.requiresFocus ?? false,
-    },
-  });
-
+  // If projectId is provided, verify it exists
   if (data.projectId) {
-    revalidatePath(`/projects/${data.projectId}`);
-  } else {
-    revalidatePath("/inbox");
+    const project = await prisma.project.findUnique({
+      where: { id: data.projectId },
+    });
+    if (!project) {
+      throw new NotFoundError("Project", data.projectId);
+    }
   }
-  return item;
+
+  try {
+    const { user } = await auth();
+    if (!user) throw new AuthenticationError();
+
+    const item = await prisma.item.create({
+      data: {
+        title: data.title,
+        notes: data.notes,
+        status: data.projectId ? "PROJECT" : "INBOX",
+        projectId: data.projectId ?? null,
+        userId: user.id,
+        priority: data.priority ?? "MEDIUM",
+        estimated: data.estimated,
+        requiresFocus: data.requiresFocus ?? false,
+      },
+    });
+
+    if (data.projectId) {
+      revalidatePath(`/projects/${data.projectId}`);
+    } else {
+      revalidatePath("/inbox");
+    }
+    return item;
+  } catch (error) {
+    handlePrismaError(error);
+  }
 }
 
-export async function getInboxItems() {
+async function getInboxItemsImpl() {
   const { user } = await auth();
-  if (!user) {
-    throw new Error("User not found");
+  if (!user) throw new AuthenticationError();
+
+  try {
+    const items = await prisma.item.findMany({
+      where: {
+        userId: user.id,
+        status: "INBOX",
+      },
+      include: {
+        project: true,
+        contexts: true,
+        tags: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+    return items;
+  } catch (error) {
+    handlePrismaError(error);
   }
-  const items = await prisma.item.findMany({
-    where: {
-      userId: user?.id,
-    },
-    include: {
-      project: true,
-      contexts: true,
-      tags: true,
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
-  return items;
 }
 
-export async function addComment(
+async function addCommentImpl(
   itemId: string,
   content: string,
   type: CommentType = CommentType.COMMENT,
 ) {
-  const { user } = await auth();
-  if (!user) {
-    throw new Error("User not found");
+  if (!content.trim()) {
+    throw new ValidationError("Comment content is required");
   }
-  const comment = await prisma.taskComment.create({
-    data: {
-      content,
-      type,
-      taskId: itemId,
-      userId: user.id,
-    },
-    include: {
-      user: {
-        select: {
-          name: true,
-          email: true,
+
+  const { user } = await auth();
+  if (!user) throw new AuthenticationError();
+
+  try {
+    // Verify item exists
+    const item = await prisma.item.findUnique({
+      where: { id: itemId },
+    });
+    if (!item) {
+      throw new NotFoundError("Item", itemId);
+    }
+
+    const comment = await prisma.taskComment.create({
+      data: {
+        content,
+        type,
+        taskId: itemId,
+        userId: user.id,
+      },
+      include: {
+        user: {
+          select: {
+            name: true,
+            email: true,
+          },
         },
       },
-    },
-  });
+    });
 
-  // Create notifications for all users except the comment author
-  await prisma.commentNotification.createMany({
-    data: {
-      commentId: comment.id,
-      userId: user.id,
-    },
-  });
-
-  revalidatePath(`/items/${itemId}`);
-  return comment;
-}
-
-export async function getItemComments(itemId: string) {
-  const comments = await prisma.taskComment.findMany({
-    where: {
-      taskId: itemId,
-    },
-    include: {
-      user: {
-        select: {
-          name: true,
-          email: true,
-        },
+    // Create notifications for all users except the comment author
+    await prisma.commentNotification.createMany({
+      data: {
+        commentId: comment.id,
+        userId: user.id,
       },
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
-  return comments;
+    });
+
+    revalidatePath(`/items/${itemId}`);
+    return comment;
+  } catch (error) {
+    handlePrismaError(error);
+  }
 }
 
-export async function processItem(
+async function processItemImpl(
   itemId: string,
   data: {
     status: ItemStatus;
@@ -144,354 +187,92 @@ export async function processItem(
   },
 ) {
   const { user } = await auth();
-  if (!user) {
-    throw new Error("User not found");
-  }
+  if (!user) throw new AuthenticationError();
 
-  const currentItem = await prisma.item.findUnique({
-    where: { id: itemId },
-    include: {
-      project: true,
-    },
-  });
+  try {
+    const currentItem = await prisma.item.findUnique({
+      where: { id: itemId },
+      include: { project: true },
+    });
 
-  if (!currentItem) {
-    throw new Error("Item not found");
-  }
+    if (!currentItem) {
+      throw new NotFoundError("Item", itemId);
+    }
 
-  // Validate estimated time if provided
-  if (data.estimated) {
-    data.estimated = Math.min(Math.max(data.estimated, 5), 480);
-  }
+    // Validate estimated time if provided
+    if (data.estimated) {
+      if (data.estimated < 5 || data.estimated > 480) {
+        throw new ValidationError("Estimated time must be between 5 and 480 minutes");
+      }
+      data.estimated = Math.min(Math.max(data.estimated, 5), 480);
+    }
 
-  const item = await prisma.item.update({
-    where: { id: itemId },
-    data: {
-      status: data.status,
-      projectId: data.projectId,
-      contexts: {
-        set: data.contextIds?.map((id) => ({ id })) || [],
+    // Verify project exists if provided
+    if (data.projectId) {
+      const project = await prisma.project.findUnique({
+        where: { id: data.projectId },
+      });
+      if (!project) {
+        throw new NotFoundError("Project", data.projectId);
+      }
+    }
+
+    // Verify contexts exist if provided
+    if (data.contextIds?.length) {
+      const contexts = await prisma.context.findMany({
+        where: { id: { in: data.contextIds } },
+      });
+      if (contexts.length !== data.contextIds.length) {
+        throw new ValidationError("One or more contexts not found");
+      }
+    }
+
+    const item = await prisma.item.update({
+      where: { id: itemId },
+      data: {
+        status: data.status,
+        projectId: data.projectId,
+        contexts: {
+          set: data.contextIds?.map((id) => ({ id })) || [],
+        },
+        notes: data.notes,
+        estimated: data.estimated,
+        dueDate: data.dueDate,
+        priority: data.priority,
+        requiresFocus: data.requiresFocus,
       },
-      notes: data.notes,
-      estimated: data.estimated,
-      dueDate: data.dueDate,
-      priority: data.priority,
-      requiresFocus: data.requiresFocus,
-    },
-  });
+    });
 
-  // Add system comment for status change
-  if (currentItem.status !== data.status) {
-    await addComment(
-      itemId,
-      `Status changed from ${currentItem.status} to ${data.status}`,
-      CommentType.STATUS_CHANGE,
-    );
+    // Add system comments for changes
+    if (currentItem.status !== data.status) {
+      await addCommentImpl(
+        itemId,
+        `Status changed from ${currentItem.status} to ${data.status}`,
+        CommentType.STATUS_CHANGE,
+      );
+    }
+
+    if (currentItem.projectId !== data.projectId) {
+      const newProject = data.projectId
+        ? await prisma.project.findUnique({ where: { id: data.projectId } })
+        : null;
+
+      await addCommentImpl(
+        itemId,
+        `Project ${currentItem.projectId ? "changed from " + currentItem.project?.title : "set to"} ${newProject?.title || "none"}`,
+        CommentType.STATUS_CHANGE,
+      );
+    }
+
+    revalidatePath("/inbox");
+    revalidatePath("/process");
+    return item;
+  } catch (error) {
+    handlePrismaError(error);
   }
-
-  // Add system comment for project change
-  if (currentItem.projectId !== data.projectId) {
-    const newProject = data.projectId
-      ? await prisma.project.findUnique({ where: { id: data.projectId } })
-      : null;
-
-    await addComment(
-      itemId,
-      `Project ${currentItem.projectId ? "changed from " + currentItem.project?.title : "set to"} ${newProject?.title || "none"}`,
-      CommentType.STATUS_CHANGE,
-    );
-  }
-
-  revalidatePath("/inbox");
-  revalidatePath("/process");
-  return item;
 }
 
-export async function getNextActions() {
-  const { user } = await auth();
-  if (!user) {
-    throw new Error("User not found");
-  }
-  const nextActions = await prisma.item.findMany({
-    where: {
-      userId: user.id,
-      status: "NEXT_ACTION",
-    },
-    include: {
-      project: true,
-      contexts: true,
-      subtasks: {
-        include: {
-          task: true,
-        },
-        orderBy: {
-          order: "asc",
-        },
-      },
-      checklistItems: {
-        orderBy: {
-          order: "asc",
-        },
-      },
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
-  return nextActions;
-}
-
-export async function updateItemStatus(itemId: string, status: ItemStatus) {
-  const item = await prisma.item.update({
-    where: { id: itemId },
-    data: { status },
-  });
-  revalidatePath("/next-actions");
-  return item;
-}
-
-export async function getNextActionsWithDetails() {
-  const { user } = await auth();
-  if (!user) {
-    throw new Error("User not found");
-  }
-  const nextActions = await prisma.item.findMany({
-    where: {
-      userId: user.id,
-      status: "NEXT_ACTION",
-    },
-    include: {
-      project: true,
-      contexts: true,
-      subtasks: {
-        include: {
-          task: true,
-        },
-        orderBy: {
-          order: "asc",
-        },
-      },
-      checklistItems: {
-        orderBy: {
-          order: "asc",
-        },
-      },
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
-
-  const projects = await prisma.project.findMany({
-    where: { userId: user.id },
-    select: { id: true, title: true },
-  });
-
-  const contexts = await prisma.context.findMany({
-    where: { userId: user.id },
-    select: { id: true, name: true },
-  });
-
-  return { nextActions, projects, contexts };
-}
-
-export const getInboxCount = cache(async () => {
-  const { user } = await auth();
-  if (!user) {
-    throw new Error("User not found");
-  }
-  const count = await prisma.item.count({
-    where: {
-      userId: user.id,
-      status: "INBOX",
-    },
-  });
-  return count;
-});
-
-export async function getItemToProcess(id?: string) {
-  const { user } = await auth();
-  if (!user) {
-    throw new Error("User not found");
-  }
-  const item = await prisma.item.findFirst({
-    where: id
-      ? { id: id }
-      : { userId: user.id, status: "INBOX" },
-    include: {
-      contexts: true,
-      subtasks: {
-        include: {
-          task: true,
-        },
-        orderBy: {
-          order: "asc",
-        },
-      },
-      checklistItems: {
-        orderBy: {
-          order: "asc",
-        },
-      },
-    },
-  });
-  return item;
-}
-export async function getItemOfProjects(id: string) {
-  const item = await prisma.item.findFirst({
-    where: {
-      projectId: id,
-    },
-    include: {
-      subtasks: {
-        include: {
-          task: true,
-        },
-        orderBy: {
-          order: "asc",
-        },
-      },
-      checklistItems: {
-        orderBy: {
-          order: "asc",
-        },
-      },
-    },
-  });
-  return item;
-}
-
-// Subtask Management
-export async function addSubtask(
-  parentId: string,
-  data: { title: string; notes?: string },
-) {
-  const { user } = await auth();
-  if (!user) {
-    throw new Error("User not found");
-  }
-
-  // Create the subtask as a regular item first
-  const subtaskItem = await prisma.item.create({
-    data: {
-      title: data.title,
-      notes: data.notes,
-      status: "NEXT_ACTION",
-      userId: user.id,
-    },
-  });
-
-  // Create the subtask relationship
-  const subtask = await prisma.subtask.create({
-    data: {
-      parentId,
-      taskId: subtaskItem.id,
-      order: await getNextSubtaskOrder(parentId),
-    },
-  });
-
-  revalidatePath("/next-actions");
-  return subtask;
-}
-
-export async function removeSubtask(parentId: string, subtaskId: string) {
-  await prisma.subtask.delete({
-    where: {
-      taskId: subtaskId,
-    },
-  });
-
-  // Delete the actual item
-  await prisma.item.delete({
-    where: {
-      id: subtaskId,
-    },
-  });
-
-  revalidatePath("/next-actions");
-}
-
-export async function reorderSubtasks(parentId: string, subtaskIds: string[]) {
-  await prisma.$transaction(
-    subtaskIds.map((id, index) =>
-      prisma.subtask.update({
-        where: { taskId: id },
-        data: { order: index },
-      }),
-    ),
-  );
-
-  revalidatePath("/next-actions");
-}
-
-async function getNextSubtaskOrder(parentId: string): Promise<number> {
-  const lastSubtask = await prisma.subtask.findFirst({
-    where: { parentId },
-    orderBy: { order: "desc" },
-  });
-  return (lastSubtask?.order ?? -1) + 1;
-}
-
-// Checklist Management
-export async function addChecklistItem(itemId: string, title: string) {
-  const checklistItem = await prisma.checklistItem.create({
-    data: {
-      title,
-      itemId,
-      order: await getNextChecklistItemOrder(itemId),
-    },
-  });
-
-  revalidatePath("/next-actions");
-  return checklistItem;
-}
-
-export async function updateChecklistItem(
-  id: string,
-  data: { title?: string; completed?: boolean },
-) {
-  const checklistItem = await prisma.checklistItem.update({
-    where: { id },
-    data,
-  });
-
-  revalidatePath("/next-actions");
-  return checklistItem;
-}
-
-export async function removeChecklistItem(id: string) {
-  await prisma.checklistItem.delete({
-    where: { id },
-  });
-
-  revalidatePath("/next-actions");
-}
-
-export async function reorderChecklistItems(
-  itemId: string,
-  checklistItemIds: string[],
-) {
-  await prisma.$transaction(
-    checklistItemIds.map((id, index) =>
-      prisma.checklistItem.update({
-        where: { id },
-        data: { order: index },
-      }),
-    ),
-  );
-
-  revalidatePath("/next-actions");
-}
-
-async function getNextChecklistItemOrder(itemId: string): Promise<number> {
-  const lastItem = await prisma.checklistItem.findFirst({
-    where: { itemId },
-    orderBy: { order: "desc" },
-  });
-  return (lastItem?.order ?? -1) + 1;
-}
-
-export async function updateItem(
+async function updateItemImpl(
   id: string,
   data: {
     title?: string;
@@ -504,387 +285,392 @@ export async function updateItem(
     requiresFocus?: boolean;
   },
 ) {
-  const currentItem = await prisma.item.findUnique({
-    where: { id },
-    include: {
-      project: true,
-    },
-  });
-
-  if (!currentItem) {
-    throw new Error("Item not found");
-  }
-
-  // Validate estimated time if provided
-  if (data.estimated) {
-    data.estimated = Math.min(Math.max(data.estimated, 5), 480);
-  }
-
-  const item = await prisma.item.update({
-    where: { id },
-    data: {
-      ...(data.title && { title: data.title }),
-      ...(data.notes && { notes: data.notes }),
-      ...(data.status && { status: data.status }),
-      ...(data.projectId !== undefined && { projectId: data.projectId }),
-      ...(data.priority !== undefined && { priority: data.priority }),
-      ...(data.estimated !== undefined && { estimated: data.estimated }),
-      ...(data.requiresFocus !== undefined && {
-        requiresFocus: data.requiresFocus,
-      }),
-      ...(data.contextIds && {
-        contexts: {
-          set: data.contextIds.map((id) => ({ id })),
-        },
-      }),
-    },
-    include: {
-      contexts: true,
-      subtasks: {
-        include: {
-          task: true,
-        },
-        orderBy: {
-          order: "asc",
-        },
-      },
-      checklistItems: {
-        orderBy: {
-          order: "asc",
-        },
-      },
-    },
-  });
-
-  // Add system comments for changes
-  if (data.status && currentItem.status !== data.status) {
-    await addComment(
-      id,
-      `Status changed from ${currentItem.status} to ${data.status}`,
-      CommentType.STATUS_CHANGE,
-    );
-  }
-
-  if (data.priority !== undefined && currentItem.priority !== data.priority) {
-    await addComment(
-      id,
-      `Priority changed from ${currentItem.priority} to ${data.priority}`,
-      CommentType.PRIORITY_CHANGE,
-    );
-  }
-
-  if (
-    data.estimated !== undefined &&
-    currentItem.estimated !== data.estimated
-  ) {
-    await addComment(
-      id,
-      `Estimate changed from ${currentItem.estimated || 0} to ${data.estimated} minutes`,
-      CommentType.ESTIMATE_CHANGE,
-    );
-  }
-
-  return item;
-}
-
-export async function addDependency(itemId: string, blockerTaskId: string) {
-  const dependency = await prisma.taskDependency.create({
-    data: {
-      dependentTaskId: itemId,
-      blockerTaskId,
-    },
-  });
-
-  await addComment(
-    itemId,
-    `Added dependency on task ${blockerTaskId}`,
-    CommentType.DEPENDENCY_ADDED,
-  );
-
-  return dependency;
-}
-
-export async function removeDependency(itemId: string, blockerTaskId: string) {
-  await prisma.taskDependency.deleteMany({
-    where: {
-      dependentTaskId: itemId,
-      blockerTaskId,
-    },
-  });
-
-  await addComment(
-    itemId,
-    `Removed dependency on task ${blockerTaskId}`,
-    CommentType.DEPENDENCY_REMOVED,
-  );
-}
-
-export async function getNextItems() {
   const { user } = await auth();
-  if (!user) {
-    throw new Error("User not found");
-  }
-
-  const items = await prisma.item.findMany({
-    where: {
-      userId: user.id,
-      status: "NEXT_ACTION",
-    },
-    select: {
-      id: true,
-      title: true,
-      status: true,
-      plannedDate: true,
-      estimated: true,
-      subtasks: {
-        include: {
-          task: true,
-        },
-        orderBy: {
-          order: "asc",
-        },
-      },
-      checklistItems: {
-        orderBy: {
-          order: "asc",
-        },
-      },
-    },
-  });
-
-  return items;
-}
-
-export async function updateItemPlanning(
-  itemId: string,
-  data: {
-    plannedDate: Date;
-    estimated: number;
-  },
-) {
-  const { user } = await auth();
-  if (!user) {
-    throw new Error("User not found");
-  }
-
-  // Validate estimated time
-  const validatedEstimate = Math.min(Math.max(data.estimated, 5), 480);
-
-  const item = await prisma.item.update({
-    where: { id: itemId },
-    data: {
-      plannedDate: data.plannedDate,
-      estimated: validatedEstimate,
-    },
-  });
-
-  revalidatePath("/calendar");
-  return item;
-}
-
-interface TaskBreakdown {
-  focusSessions: number;
-  shortBreaks: number;
-  longBreaks: number;
-  remainingTime: number;
-  totalDuration: number;
-}
-
-export async function calculateTaskBreakdown(
-  itemId: string,
-): Promise<TaskBreakdown> {
-  const { user: sessionUser } = await auth();
-  if (!sessionUser) {
-    throw new Error("User not found");
-  }
-
-  // Get the full user data with preferences
-  const user = await prisma.user.findUnique({
-    where: { id: sessionUser.id },
-    select: {
-      pomodoroDuration: true,
-      breakDuration: true,
-      longBreakDuration: true,
-      shortBreakInterval: true,
-    },
-  });
-
-  if (!user) {
-    throw new Error("User preferences not found");
-  }
-
-  // Get the item with its estimated time
-  const item = await prisma.item.findUnique({
-    where: { id: itemId },
-    select: {
-      estimated: true,
-      requiresFocus: true,
-    },
-  });
-
-  if (!item?.estimated) {
-    throw new Error("Item has no estimated duration");
-  }
-
-  // If task doesn't require focus, return simple breakdown
-  if (!item.requiresFocus) {
-    return {
-      focusSessions: 1,
-      shortBreaks: 0,
-      longBreaks: 0,
-      remainingTime: item.estimated,
-      totalDuration: item.estimated,
-    };
-  }
-
-  const pomodoroDuration = user.pomodoroDuration;
-  const shortBreakDuration = user.breakDuration;
-  const longBreakDuration = user.longBreakDuration;
-  const sessionsBeforeLongBreak = user.shortBreakInterval;
-
-  // Calculate number of complete focus sessions needed
-  const totalMinutes = item.estimated;
-  const fullSessions = Math.floor(totalMinutes / pomodoroDuration);
-  const remainingTime = totalMinutes % pomodoroDuration;
-
-  // Calculate breaks needed
-  const longBreaks = Math.floor(fullSessions / sessionsBeforeLongBreak);
-  const shortBreaks = fullSessions - longBreaks - (remainingTime > 0 ? 0 : 1);
-
-  // Calculate total duration including breaks
-  const totalDuration =
-    totalMinutes + // Task time
-    shortBreaks * shortBreakDuration + // Short break time
-    longBreaks * longBreakDuration; // Long break time
-
-  return {
-    focusSessions: fullSessions + (remainingTime > 0 ? 1 : 0),
-    shortBreaks,
-    longBreaks,
-    remainingTime: remainingTime,
-    totalDuration,
-  };
-}
-
-export async function splitTaskIntoSessions(itemId: string): Promise<void> {
-  const { user: sessionUser } = await auth();
-  if (!sessionUser) {
-    throw new Error("User not found");
-  }
-
-  // Get the breakdown first
-  const breakdown = await calculateTaskBreakdown(itemId);
-
-  // Get the original task
-  const originalTask = await prisma.item.findUnique({
-    where: { id: itemId },
-    select: {
-      title: true,
-      estimated: true,
-      requiresFocus: true,
-    },
-  });
-
-  if (!originalTask?.estimated || !originalTask.requiresFocus) {
-    throw new Error(
-      "Task cannot be split: missing estimation or focus requirement",
-    );
-  }
-
-  // Get user preferences for session duration
-  const user = await prisma.user.findUnique({
-    where: { id: sessionUser.id },
-    select: {
-      pomodoroDuration: true,
-    },
-  });
-
-  if (!user) {
-    throw new Error("User preferences not found");
-  }
-
-  // Create subtasks for each focus session
-  for (let i = 0; i < breakdown.focusSessions; i++) {
-    const isLastSession = i === breakdown.focusSessions - 1;
-    const sessionDuration =
-      isLastSession && breakdown.remainingTime > 0
-        ? breakdown.remainingTime
-        : user.pomodoroDuration;
-
-    const sessionTitle = `${originalTask.title} - Session ${i + 1}/${breakdown.focusSessions}`;
-
-    // Create the session subtask
-    const subtaskItem = await prisma.item.create({
-      data: {
-        title: sessionTitle,
-        status: "NEXT_ACTION",
-        userId: sessionUser.id,
-        estimated: sessionDuration,
-        requiresFocus: true,
-      },
-    });
-
-    // Link it as a subtask
-    await prisma.subtask.create({
-      data: {
-        parentId: itemId,
-        taskId: subtaskItem.id,
-        order: i,
-      },
-    });
-  }
-
-  // Update the original task to mark it as split
-  await prisma.item.update({
-    where: { id: itemId },
-    data: {
-      notes:
-        `Split into ${breakdown.focusSessions} focus sessions\n` +
-        `Total duration: ${breakdown.totalDuration} minutes\n` +
-        `Short breaks: ${breakdown.shortBreaks}\n` +
-        `Long breaks: ${breakdown.longBreaks}`,
-    },
-  });
-
-  revalidatePath("/next-actions");
-}
-
-export async function deleteItem(id: string) {
-  const { user } = await auth();
-  if (!user) {
-    throw new Error("User not found");
-  }
-
-  await prisma.item.delete({
-    where: { id },
-  });
-
-  revalidatePath("/inbox");
-  return { success: true };
-}
-
-export async function updateItemsPriority(
-  items: { id: string; priority: PriorityLevel }[],
-) {
-  const { user } = await auth();
-  if (!user) {
-    throw new Error("User not found");
-  }
+  if (!user) throw new AuthenticationError();
 
   try {
-    await prisma.$transaction(
-      items.map((item) =>
-        prisma.item.update({
-          where: { id: item.id },
-          data: { priority: item.priority },
-        }),
-      ),
-    );
+    const currentItem = await prisma.item.findUnique({
+      where: { id },
+      include: { project: true },
+    });
 
-    revalidatePath("/");
-    return { success: true };
+    if (!currentItem) {
+      throw new NotFoundError("Item", id);
+    }
+
+    // Validate title if provided
+    if (data.title && !data.title.trim()) {
+      throw new ValidationError("Title cannot be empty");
+    }
+
+    // Validate estimated time if provided
+    if (data.estimated) {
+      if (data.estimated < 5 || data.estimated > 480) {
+        throw new ValidationError("Estimated time must be between 5 and 480 minutes");
+      }
+      data.estimated = Math.min(Math.max(data.estimated, 5), 480);
+    }
+
+    // Verify project exists if provided
+    if (data.projectId) {
+      const project = await prisma.project.findUnique({
+        where: { id: data.projectId },
+      });
+      if (!project) {
+        throw new NotFoundError("Project", data.projectId);
+      }
+    }
+
+    // Verify contexts exist if provided
+    if (data.contextIds?.length) {
+      const contexts = await prisma.context.findMany({
+        where: { id: { in: data.contextIds } },
+      });
+      if (contexts.length !== data.contextIds.length) {
+        throw new ValidationError("One or more contexts not found");
+      }
+    }
+
+    const item = await prisma.item.update({
+      where: { id },
+      data: {
+        ...(data.title && { title: data.title }),
+        ...(data.notes && { notes: data.notes }),
+        ...(data.status && { status: data.status }),
+        ...(data.projectId !== undefined && { projectId: data.projectId }),
+        ...(data.priority !== undefined && { priority: data.priority }),
+        ...(data.estimated !== undefined && { estimated: data.estimated }),
+        ...(data.requiresFocus !== undefined && {
+          requiresFocus: data.requiresFocus,
+        }),
+        ...(data.contextIds && {
+          contexts: {
+            set: data.contextIds.map((id) => ({ id })),
+          },
+        }),
+      },
+      include: {
+        contexts: true,
+        subtasks: {
+          include: {
+            task: true,
+          },
+          orderBy: {
+            order: "asc",
+          },
+        },
+        checklistItems: {
+          orderBy: {
+            order: "asc",
+          },
+        },
+      },
+    });
+
+    // Add system comments for changes
+    if (data.status && currentItem.status !== data.status) {
+      await addCommentImpl(
+        id,
+        `Status changed from ${currentItem.status} to ${data.status}`,
+        CommentType.STATUS_CHANGE,
+      );
+    }
+
+    if (data.priority !== undefined && currentItem.priority !== data.priority) {
+      await addCommentImpl(
+        id,
+        `Priority changed from ${currentItem.priority} to ${data.priority}`,
+        CommentType.PRIORITY_CHANGE,
+      );
+    }
+
+    if (
+      data.estimated !== undefined &&
+      currentItem.estimated !== data.estimated
+    ) {
+      await addCommentImpl(
+        id,
+        `Estimate changed from ${currentItem.estimated || 0} to ${data.estimated} minutes`,
+        CommentType.ESTIMATE_CHANGE,
+      );
+    }
+
+    return item;
   } catch (error) {
-    console.error("Error reordering items:", error);
-    throw new Error("Failed to reorder items");
+    handlePrismaError(error);
   }
 }
+
+async function addSubtaskImpl(
+  parentId: string,
+  data: { title: string; notes?: string },
+) {
+  if (!data.title.trim()) {
+    throw new ValidationError("Subtask title is required");
+  }
+
+  const { user } = await auth();
+  if (!user) throw new AuthenticationError();
+
+  try {
+    // Verify parent item exists and belongs to user
+    const parentItem = await prisma.item.findUnique({
+      where: { id: parentId },
+    });
+    if (!parentItem) {
+      throw new NotFoundError("Parent item", parentId);
+    }
+    if (parentItem.userId !== user.id) {
+      throw new AuthenticationError("Not authorized to modify this item");
+    }
+
+    // Create the subtask as a regular item first
+    const subtaskItem = await prisma.item.create({
+      data: {
+        title: data.title,
+        notes: data.notes,
+        status: "NEXT_ACTION",
+        userId: user.id,
+      },
+    });
+
+    // Create the subtask relationship
+    const subtask = await prisma.subtask.create({
+      data: {
+        parentId,
+        taskId: subtaskItem.id,
+        order: await getNextSubtaskOrder(parentId),
+      },
+    });
+
+    revalidatePath("/next-actions");
+    return subtask;
+  } catch (error) {
+    handlePrismaError(error);
+  }
+}
+
+async function removeSubtaskImpl(parentId: string, subtaskId: string) {
+  const { user } = await auth();
+  if (!user) throw new AuthenticationError();
+
+  try {
+    // Verify both items exist and belong to user
+    const [parent, subtask] = await Promise.all([
+      prisma.item.findUnique({ where: { id: parentId } }),
+      prisma.item.findUnique({ where: { id: subtaskId } }),
+    ]);
+
+    if (!parent) throw new NotFoundError("Parent item", parentId);
+    if (!subtask) throw new NotFoundError("Subtask", subtaskId);
+
+    if (parent.userId !== user.id || subtask.userId !== user.id) {
+      throw new AuthenticationError("Not authorized to modify these items");
+    }
+
+    // Delete the subtask relationship and the item
+    await prisma.$transaction([
+      prisma.subtask.delete({
+        where: { taskId: subtaskId },
+      }),
+      prisma.item.delete({
+        where: { id: subtaskId },
+      }),
+    ]);
+
+    revalidatePath("/next-actions");
+  } catch (error) {
+    handlePrismaError(error);
+  }
+}
+
+async function addChecklistItemImpl(itemId: string, title: string) {
+  if (!title.trim()) {
+    throw new ValidationError("Checklist item title is required");
+  }
+
+  const { user } = await auth();
+  if (!user) throw new AuthenticationError();
+
+  try {
+    // Verify parent item exists and belongs to user
+    const parentItem = await prisma.item.findUnique({
+      where: { id: itemId },
+    });
+    if (!parentItem) {
+      throw new NotFoundError("Item", itemId);
+    }
+    if (parentItem.userId !== user.id) {
+      throw new AuthenticationError("Not authorized to modify this item");
+    }
+
+    const checklistItem = await prisma.checklistItem.create({
+      data: {
+        title,
+        itemId,
+        order: await getNextChecklistItemOrder(itemId),
+      },
+    });
+
+    revalidatePath("/next-actions");
+    return checklistItem;
+  } catch (error) {
+    handlePrismaError(error);
+  }
+}
+
+async function updateChecklistItemImpl(
+  id: string,
+  data: { title?: string; completed?: boolean },
+) {
+  if (data.title !== undefined && !data.title.trim()) {
+    throw new ValidationError("Checklist item title cannot be empty");
+  }
+
+  const { user } = await auth();
+  if (!user) throw new AuthenticationError();
+
+  try {
+    // Verify checklist item exists and belongs to user through parent item
+    const existingItem = await prisma.checklistItem.findUnique({
+      where: { id },
+      include: { item: true },
+    });
+    if (!existingItem) {
+      throw new NotFoundError("Checklist item", id);
+    }
+    if (existingItem.item.userId !== user.id) {
+      throw new AuthenticationError("Not authorized to modify this checklist item");
+    }
+
+    const checklistItem = await prisma.checklistItem.update({
+      where: { id },
+      data,
+    });
+
+    revalidatePath("/next-actions");
+    return checklistItem;
+  } catch (error) {
+    handlePrismaError(error);
+  }
+}
+
+async function addDependencyImpl(itemId: string, blockerTaskId: string) {
+  if (itemId === blockerTaskId) {
+    throw new ValidationError("An item cannot depend on itself");
+  }
+
+  const { user } = await auth();
+  if (!user) throw new AuthenticationError();
+
+  try {
+    // Verify both items exist and belong to user
+    const [dependentTask, blockerTask] = await Promise.all([
+      prisma.item.findUnique({ where: { id: itemId } }),
+      prisma.item.findUnique({ where: { id: blockerTaskId } }),
+    ]);
+
+    if (!dependentTask) throw new NotFoundError("Dependent task", itemId);
+    if (!blockerTask) throw new NotFoundError("Blocker task", blockerTaskId);
+
+    if (dependentTask.userId !== user.id || blockerTask.userId !== user.id) {
+      throw new AuthenticationError("Not authorized to modify these items");
+    }
+
+    // Check for circular dependencies
+    const existingDependency = await prisma.taskDependency.findFirst({
+      where: {
+        OR: [
+          { dependentTaskId: blockerTaskId, blockerTaskId: itemId },
+          { dependentTaskId: itemId, blockerTaskId: blockerTaskId },
+        ],
+      },
+    });
+
+    if (existingDependency) {
+      throw new ValidationError("Circular dependency detected");
+    }
+
+    const dependency = await prisma.taskDependency.create({
+      data: {
+        dependentTaskId: itemId,
+        blockerTaskId,
+      },
+    });
+
+    await addCommentImpl(
+      itemId,
+      `Added dependency on task ${blockerTaskId}`,
+      CommentType.DEPENDENCY_ADDED,
+    );
+
+    return dependency;
+  } catch (error) {
+    handlePrismaError(error);
+  }
+}
+
+async function removeDependencyImpl(itemId: string, blockerTaskId: string) {
+  const { user } = await auth();
+  if (!user) throw new AuthenticationError();
+
+  try {
+    // Verify both items exist and belong to user
+    const [dependentTask, blockerTask] = await Promise.all([
+      prisma.item.findUnique({ where: { id: itemId } }),
+      prisma.item.findUnique({ where: { id: blockerTaskId } }),
+    ]);
+
+    if (!dependentTask) throw new NotFoundError("Dependent task", itemId);
+    if (!blockerTask) throw new NotFoundError("Blocker task", blockerTaskId);
+
+    if (dependentTask.userId !== user.id || blockerTask.userId !== user.id) {
+      throw new AuthenticationError("Not authorized to modify these items");
+    }
+
+    await prisma.taskDependency.deleteMany({
+      where: {
+        dependentTaskId: itemId,
+        blockerTaskId,
+      },
+    });
+
+    await addCommentImpl(
+      itemId,
+      `Removed dependency on task ${blockerTaskId}`,
+      CommentType.DEPENDENCY_REMOVED,
+    );
+  } catch (error) {
+    handlePrismaError(error);
+  }
+}
+
+// Create safe actions
+export const createItem = createSafeAction(createItemImpl);
+export const getInboxItems = createSafeAction(getInboxItemsImpl);
+export const addComment = createSafeAction(addCommentImpl);
+export const processItem = createSafeAction(processItemImpl);
+export const updateItem = createSafeAction(updateItemImpl);
+export const addSubtask = createSafeAction(addSubtaskImpl);
+export const removeSubtask = createSafeAction(removeSubtaskImpl);
+export const addChecklistItem = createSafeAction(addChecklistItemImpl);
+export const updateChecklistItem = createSafeAction(updateChecklistItemImpl);
+export const addDependency = createSafeAction(addDependencyImpl);
+export const removeDependency = createSafeAction(removeDependencyImpl);
+
+// Cache wrapper for inbox count
+export const getInboxCount = cache(createSafeAction(async () => {
+  const { user } = await auth();
+  if (!user) throw new AuthenticationError();
+
+  try {
+    return await prisma.item.count({
+      where: {
+        userId: user.id,
+        status: "INBOX",
+      },
+    });
+  } catch (error) {
+    handlePrismaError(error);
+  }
+}));

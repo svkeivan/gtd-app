@@ -1,183 +1,316 @@
 "use server";
 
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { CreateTimeEntryData, TimeEntry, TimeEntryReport } from "@/types/time-entry-types";
 import { ItemStatus } from "@prisma/client";
+import { createSafeAction } from "@/lib/safe-action";
+import {
+  AuthenticationError,
+  NotFoundError,
+  ValidationError,
+  handlePrismaError,
+} from "@/lib/errors";
 
-export async function getNextActionItems() {
-  const { user } = await auth();
-  if (!user?.id || !user.isLoggedIn) {
-    throw new Error("You must be logged in to view next action items");
+// Helper functions
+function validateTimeEntry(data: CreateTimeEntryData) {
+  if (!data.startTime || !data.endTime) {
+    throw new ValidationError("Start time and end time are required");
   }
 
-  const items = await prisma.item.findMany({
-    where: {
-      userId: user.id,
-      status: ItemStatus.NEXT_ACTION,
-    },
-    select: {
-      id: true,
-      title: true,
-    },
-    orderBy: {
-      updatedAt: 'desc',
-    },
-  });
-
-  return items;
-}
-
-export async function createTimeEntry(data: CreateTimeEntryData): Promise<TimeEntry> {
-  const { user } = await auth();
-  if (!user?.id || !user.isLoggedIn) {
-    throw new Error("You must be logged in to create time entries");
+  if (data.startTime >= data.endTime) {
+    throw new ValidationError("Start time must be before end time");
   }
 
   const duration = Math.round(
     (data.endTime.getTime() - data.startTime.getTime()) / (1000 * 60)
   );
 
-  const timeEntry = await prisma.timeEntry.create({
-    data: {
-      startTime: data.startTime,
-      endTime: data.endTime,
-      duration,
-      category: data.category,
-      note: data.note,
-      userId: user.id,
-      itemId: data.itemId,
-    },
-  });
+  if (duration < 1) {
+    throw new ValidationError("Time entry must be at least 1 minute long");
+  }
 
-  revalidatePath("/dashboard/time-tracking");
-  return timeEntry as TimeEntry;
+  if (duration > 24 * 60) {
+    throw new ValidationError("Time entry cannot be longer than 24 hours");
+  }
+
+  if (data.note && data.note.length > 500) {
+    throw new ValidationError("Note cannot be longer than 500 characters");
+  }
+
+  const validCategories = ["FOCUS", "MEETING", "BREAK", "OTHER"];
+  if (data.category && !validCategories.includes(data.category)) {
+    throw new ValidationError("Invalid category");
+  }
+
+  return duration;
 }
 
-export async function updateTimeEntry(id: string, data: CreateTimeEntryData): Promise<TimeEntry> {
+// Implementation functions
+async function getNextActionItemsImpl() {
   const { user } = await auth();
-  if (!user?.id || !user.isLoggedIn) {
-    throw new Error("You must be logged in to update time entries");
-  }
+  if (!user) throw new AuthenticationError();
 
-  // Verify ownership
-  const existingEntry = await prisma.timeEntry.findUnique({
-    where: { id },
-    select: { userId: true },
-  });
-
-  if (!existingEntry || existingEntry.userId !== user.id) {
-    throw new Error("Time entry not found or unauthorized");
-  }
-
-  const duration = Math.round(
-    (data.endTime.getTime() - data.startTime.getTime()) / (1000 * 60)
-  );
-
-  const timeEntry = await prisma.timeEntry.update({
-    where: { id },
-    data: {
-      startTime: data.startTime,
-      endTime: data.endTime,
-      duration,
-      category: data.category,
-      note: data.note,
-      itemId: data.itemId,
-    },
-  });
-
-  revalidatePath("/dashboard/time-tracking");
-  return timeEntry as TimeEntry;
-}
-
-export async function deleteTimeEntry(id: string): Promise<void> {
-  const { user } = await auth();
-  if (!user?.id || !user.isLoggedIn) {
-    throw new Error("You must be logged in to delete time entries");
-  }
-
-  // Verify ownership
-  const existingEntry = await prisma.timeEntry.findUnique({
-    where: { id },
-    select: { userId: true },
-  });
-
-  if (!existingEntry || existingEntry.userId !== user.id) {
-    throw new Error("Time entry not found or unauthorized");
-  }
-
-  await prisma.timeEntry.delete({
-    where: { id },
-  });
-
-  revalidatePath("/dashboard/time-tracking");
-}
-
-export async function getTimeEntries(date: Date): Promise<TimeEntry[]> {
-  const { user } = await auth();
-  if (!user?.id) {
-    throw new Error("Unauthorized");
-  }
-
-  const startOfDay = new Date(date);
-  startOfDay.setHours(0, 0, 0, 0);
-
-  const endOfDay = new Date(date);
-  endOfDay.setHours(23, 59, 59, 999);
-
-  const entries = await prisma.timeEntry.findMany({
-    where: {
-      userId: user.id,
-      startTime: {
-        gte: startOfDay,
-        lte: endOfDay,
+  try {
+    const items = await prisma.item.findMany({
+      where: {
+        userId: user.id,
+        status: ItemStatus.NEXT_ACTION,
       },
-    },
-    orderBy: {
-      startTime: "asc",
-    },
-  });
+      select: {
+        id: true,
+        title: true,
+      },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+    });
 
-  return entries as TimeEntry[];
+    return items;
+  } catch (error) {
+    handlePrismaError(error);
+  }
 }
 
-export async function getTimeEntriesReport(
+async function createTimeEntryImpl(data: CreateTimeEntryData): Promise<TimeEntry> {
+  const { user } = await auth();
+  if (!user) throw new AuthenticationError();
+
+  // Validate time entry data
+  const duration = validateTimeEntry(data);
+
+  try {
+    // Verify item exists if provided
+    if (data.itemId) {
+      const item = await prisma.item.findUnique({
+        where: { id: data.itemId },
+      });
+      if (!item) {
+        throw new NotFoundError("Item", data.itemId);
+      }
+      if (item.userId !== user.id) {
+        throw new AuthenticationError("Not authorized to track time for this item");
+      }
+    }
+
+    const timeEntry = await prisma.timeEntry.create({
+      data: {
+        startTime: data.startTime,
+        endTime: data.endTime,
+        duration,
+        category: data.category,
+        note: data.note,
+        userId: user.id,
+        itemId: data.itemId,
+      },
+    });
+
+    revalidatePath("/dashboard/time-tracking");
+    return timeEntry as TimeEntry;
+  } catch (error) {
+    handlePrismaError(error);
+  }
+}
+
+async function updateTimeEntryImpl(id: string, data: CreateTimeEntryData): Promise<TimeEntry> {
+  const { user } = await auth();
+  if (!user) throw new AuthenticationError();
+
+  // Validate time entry data
+  const duration = validateTimeEntry(data);
+
+  try {
+    // Verify ownership
+    const existingEntry = await prisma.timeEntry.findUnique({
+      where: { id },
+      select: { userId: true },
+    });
+
+    if (!existingEntry) {
+      throw new NotFoundError("Time entry", id);
+    }
+
+    if (existingEntry.userId !== user.id) {
+      throw new AuthenticationError("Not authorized to modify this time entry");
+    }
+
+    // Verify item exists if provided
+    if (data.itemId) {
+      const item = await prisma.item.findUnique({
+        where: { id: data.itemId },
+      });
+      if (!item) {
+        throw new NotFoundError("Item", data.itemId);
+      }
+      if (item.userId !== user.id) {
+        throw new AuthenticationError("Not authorized to track time for this item");
+      }
+    }
+
+    const timeEntry = await prisma.timeEntry.update({
+      where: { id },
+      data: {
+        startTime: data.startTime,
+        endTime: data.endTime,
+        duration,
+        category: data.category,
+        note: data.note,
+        itemId: data.itemId,
+      },
+    });
+
+    revalidatePath("/dashboard/time-tracking");
+    return timeEntry as TimeEntry;
+  } catch (error) {
+    handlePrismaError(error);
+  }
+}
+
+async function deleteTimeEntryImpl(id: string): Promise<void> {
+  const { user } = await auth();
+  if (!user) throw new AuthenticationError();
+
+  try {
+    // Verify ownership
+    const existingEntry = await prisma.timeEntry.findUnique({
+      where: { id },
+      select: { userId: true },
+    });
+
+    if (!existingEntry) {
+      throw new NotFoundError("Time entry", id);
+    }
+
+    if (existingEntry.userId !== user.id) {
+      throw new AuthenticationError("Not authorized to delete this time entry");
+    }
+
+    await prisma.timeEntry.delete({
+      where: { id },
+    });
+
+    revalidatePath("/dashboard/time-tracking");
+  } catch (error) {
+    handlePrismaError(error);
+  }
+}
+
+async function getTimeEntriesImpl(date: Date): Promise<TimeEntry[]> {
+  const { user } = await auth();
+  if (!user) throw new AuthenticationError();
+
+  if (!(date instanceof Date) || isNaN(date.getTime())) {
+    throw new ValidationError("Invalid date");
+  }
+
+  try {
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const entries = await prisma.timeEntry.findMany({
+      where: {
+        userId: user.id,
+        startTime: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
+      },
+      orderBy: {
+        startTime: "asc",
+      },
+    });
+
+    return entries as TimeEntry[];
+  } catch (error) {
+    handlePrismaError(error);
+  }
+}
+
+async function getTimeEntriesReportImpl(
   startDate: Date,
   endDate: Date,
   tags: string[] = []
 ): Promise<TimeEntryReport> {
   const { user } = await auth();
-  if (!user?.id) {
-    throw new Error("Unauthorized");
+  if (!user) throw new AuthenticationError();
+
+  // Validate dates
+  if (!(startDate instanceof Date) || isNaN(startDate.getTime())) {
+    throw new ValidationError("Invalid start date");
+  }
+  if (!(endDate instanceof Date) || isNaN(endDate.getTime())) {
+    throw new ValidationError("Invalid end date");
+  }
+  if (startDate >= endDate) {
+    throw new ValidationError("Start date must be before end date");
   }
 
-  const entries = await prisma.timeEntry.findMany({
-    where: {
-      userId: user.id,
-      startTime: {
-        gte: startDate,
-        lte: endDate,
+  // Validate date range (e.g., max 1 year)
+  const maxRange = 365 * 24 * 60 * 60 * 1000; // 1 year in milliseconds
+  if (endDate.getTime() - startDate.getTime() > maxRange) {
+    throw new ValidationError("Date range cannot exceed 1 year");
+  }
+
+  try {
+    const entries = await prisma.timeEntry.findMany({
+      where: {
+        userId: user.id,
+        startTime: {
+          gte: startDate,
+          lte: endDate,
+        },
+        ...(tags.length > 0 && {
+          item: {
+            tags: {
+              some: {
+                name: {
+                  in: tags,
+                },
+              },
+            },
+          },
+        }),
       },
-    },
-    orderBy: {
-      startTime: "asc",
-    },
-  });
+      include: {
+        item: {
+          include: {
+            tags: true,
+          },
+        },
+      },
+      orderBy: {
+        startTime: "asc",
+      },
+    });
 
-  // Calculate time spent per category
-  const categoryStats = (entries as TimeEntry[]).reduce((acc: Record<string, number>, entry) => {
-    const category = entry.category || "Uncategorized";
-    acc[category] = (acc[category] || 0) + entry.duration;
-    return acc;
-  }, {});
+    // Calculate time spent per category
+    const categoryStats = (entries as TimeEntry[]).reduce((acc: Record<string, number>, entry) => {
+      const category = entry.category || "Uncategorized";
+      acc[category] = (acc[category] || 0) + entry.duration;
+      return acc;
+    }, {});
 
-  // Calculate total time tracked
-  const totalMinutes = entries.reduce((sum: number, entry) => sum + entry.duration, 0);
+    // Calculate total time tracked
+    const totalMinutes = entries.reduce((sum: number, entry) => sum + entry.duration, 0);
 
-  return {
-    entries: entries as TimeEntry[],
-    categoryStats,
-    totalMinutes,
-  };
+    return {
+      entries: entries as TimeEntry[],
+      categoryStats,
+      totalMinutes,
+    };
+  } catch (error) {
+    handlePrismaError(error);
+  }
 }
+
+// Export wrapped actions
+export const getNextActionItems = createSafeAction(getNextActionItemsImpl);
+export const createTimeEntry = createSafeAction(createTimeEntryImpl);
+export const updateTimeEntry = createSafeAction(updateTimeEntryImpl);
+export const deleteTimeEntry = createSafeAction(deleteTimeEntryImpl);
+export const getTimeEntries = createSafeAction(getTimeEntriesImpl);
+export const getTimeEntriesReport = createSafeAction(getTimeEntriesReportImpl);

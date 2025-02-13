@@ -7,6 +7,12 @@ import { redirect } from "next/navigation";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { IronSessionData } from "iron-session";
+import { createSafeAction } from "@/lib/safe-action";
+import {
+  ValidationError,
+  AuthenticationError,
+  handlePrismaError,
+} from "@/lib/errors";
 
 const prisma = new PrismaClient();
 
@@ -42,27 +48,30 @@ function validatePassword(password: string): { isValid: boolean; message: string
   return { isValid: true, message: "" };
 }
 
-export async function login(email: string, password: string) {
-  try {
-    // Validate email
-    if (!validateEmail(email)) {
-      throw new Error("Please enter a valid email address");
-    }
+// Implementation functions
+async function loginImpl(email: string, password: string) {
+  // Validate email
+  if (!validateEmail(email)) {
+    throw new ValidationError("Please enter a valid email address");
+  }
 
+  try {
     // Find user
     const user = await prisma.user.findUnique({
       where: { email },
     });
 
     if (!user) {
-      throw new Error("The email or password you entered is incorrect");
+      // Use generic message for security
+      throw new AuthenticationError("Invalid credentials");
     }
 
     // Verify password
     const isValid = await bcrypt.compare(password, user.password!);
 
     if (!isValid) {
-      throw new Error("The email or password you entered is incorrect");
+      // Use generic message for security
+      throw new AuthenticationError("Invalid credentials");
     }
 
     // Create session
@@ -84,39 +93,39 @@ export async function login(email: string, password: string) {
       email: user.email,
     };
   } catch (error) {
-    if (error instanceof Error) {
+    if (error instanceof AuthenticationError || error instanceof ValidationError) {
       throw error;
     }
-    throw new Error("An unexpected error occurred. Please try again later.");
+    handlePrismaError(error);
   }
 }
 
-export async function register(email: string, password: string) {
+async function registerImpl(email: string, password: string) {
+  // Validate email
+  if (!validateEmail(email)) {
+    throw new ValidationError("Please enter a valid email address");
+  }
+
+  // Validate password
+  const passwordValidation = validatePassword(password);
+  if (!passwordValidation.isValid) {
+    throw new ValidationError(passwordValidation.message);
+  }
+
   try {
-    // Validate email
-    if (!validateEmail(email)) {
-      throw new Error("Please enter a valid email address");
-    }
-
-    // Validate password
-    const passwordValidation = validatePassword(password);
-    if (!passwordValidation.isValid) {
-      throw new Error(passwordValidation.message);
-    }
-
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
 
     if (existingUser) {
-      throw new Error("An account with this email already exists");
+      throw new ValidationError("An account with this email already exists");
     }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create new user
+    // Create new user with subscription
     const user = await prisma.user.create({
       data: {
         email,
@@ -159,33 +168,55 @@ export async function register(email: string, password: string) {
       }
     };
   } catch (error) {
-    if (error instanceof Error) {
+    if (error instanceof ValidationError) {
       throw error;
     }
-    throw new Error("An unexpected error occurred. Please try again later.");
+    handlePrismaError(error);
   }
 }
 
-export async function logout() {
-  const cookieStore = await cookies();
-  const session = await getIronSession<IronSessionData>(cookieStore, ironOptions);
-  session.destroy();
-  redirect("/login");
-}
-
-export async function getSession() {
-  const cookieStore = await cookies();
-  const session = await getIronSession<IronSessionData>(cookieStore, ironOptions);
-  return session.user;
-}
-
-export async function validateSession() {
-  const cookieStore = await cookies();
-  const session = await getIronSession<IronSessionData>(cookieStore, ironOptions);
-  
-  if (!session.user?.isLoggedIn) {
+async function logoutImpl() {
+  try {
+    const cookieStore = await cookies();
+    const session = await getIronSession<IronSessionData>(cookieStore, ironOptions);
+    await session.destroy();
     redirect("/login");
+  } catch (error) {
+    throw new Error("Failed to logout. Please try again.");
   }
-  
-  return session.user;
 }
+
+async function getSessionImpl() {
+  try {
+    const cookieStore = await cookies();
+    const session = await getIronSession<IronSessionData>(cookieStore, ironOptions);
+    return session.user;
+  } catch (error) {
+    throw new Error("Failed to get session. Please try again.");
+  }
+}
+
+async function validateSessionImpl() {
+  try {
+    const cookieStore = await cookies();
+    const session = await getIronSession<IronSessionData>(cookieStore, ironOptions);
+    
+    if (!session.user?.isLoggedIn) {
+      throw new AuthenticationError("Session expired");
+    }
+    
+    return session.user;
+  } catch (error) {
+    if (error instanceof AuthenticationError) {
+      redirect("/login");
+    }
+    throw new Error("Failed to validate session. Please try again.");
+  }
+}
+
+// Export wrapped actions
+export const login = createSafeAction(loginImpl, false); // false = don't require auth
+export const register = createSafeAction(registerImpl, false);
+export const logout = createSafeAction(logoutImpl);
+export const getSession = createSafeAction(getSessionImpl, false);
+export const validateSession = createSafeAction(validateSessionImpl, false);

@@ -1,138 +1,54 @@
-# Smart Scheduler Implementation Tasks
+# GTD App - Improvements and Task Breakdown
 
-## Phase 1: User Preferences Setup
+## Prioritized List of Improvements
 
-### Task Group 1: Work Schedule Settings
-1. Create interface for user to set their:
-   - Working hours (start and end time)
-   - Lunch break time and duration
-   - Regular break preferences
-   - Focus session preferences (Pomodoro duration)
-   - Short and long break durations
+This document outlines a prioritized list of improvements for the GTD App, along with a task breakdown for each improvement.
 
-### Task Group 2: Context Management
-1. Allow users to define different work contexts (e.g., office, home)
-2. Enable setting weekly schedules for each context
-3. Add ability to specify which days and hours are assigned to which contexts
+### High Priority
 
-## Phase 2: Task Enhancement
+1.  **Improve Error Handling in Server Actions:**
+    *   **Description:** Implement consistent and specific error handling in all server actions to provide better feedback to the client and improve debugging.
+    *   **Task Breakdown:**
+        *   [ ] Add try-catch blocks to all server actions.
+        *   [ ] Log errors to a central logging service.
+        *   [ ] Throw specific error types that can be handled differently by the client.
+        *   [ ] Implement a consistent error response format.
 
-### Task Group 3: Task Creation Updates
-1. Add fields for:
-   - Estimated completion time
-   - Task priority level
-   - Context assignment
-   - Focus mode requirement
-2. Create an intuitive interface for entering these details
-3. Add validation to ensure reasonable time estimates
+2.  **Enhance Password Complexity Rules:**
+    *   **Description:** Allow for more customizable password complexity rules in the `validatePassword` function.
+    *   **Task Breakdown:**
+        *   [ ] Add configuration options for minimum password length, required special characters, etc.
+        *   [ ] Update the `validatePassword` function to use the new configuration options.
+        *   [ ] Provide clear error messages to the user when the password does not meet the complexity rules.
 
-### Task Group 4: Task Breakdown System
-1. Develop logic to:
-   - Split large tasks into smaller segments
-   - Calculate number of focus sessions needed
-   - Account for breaks between sessions
-   - Handle remaining time that doesn't fit full sessions
+### Medium Priority
 
-## Phase 3: Smart Scheduling System
+3.  **Implement Pagination for Task Lists:**
+    *   **Description:** Implement pagination for task lists to improve performance for users with a large number of tasks.
+    *   **Task Breakdown:**
+        *   [ ] Add pagination parameters to the API endpoints for retrieving task lists.
+        *   [ ] Update the client-side code to handle pagination.
+        *   [ ] Implement a loading indicator to show when more tasks are being loaded.
 
-### Task Group 5: Core Scheduling Logic
-1. Create system to:
-   - Match tasks to appropriate context days
-   - Respect working hours
-   - Account for fixed breaks
-   - Prioritize tasks effectively
-   - Handle focus sessions appropriately
+4.  **Make Subscription Creation Configurable:**
+    *   **Description:** Allow the subscription plan and trial period to be configurable during user registration.
+    *   **Task Breakdown:**
+        *   [ ] Add configuration options for the subscription plan and trial period.
+        *   [ ] Update the `register` function to use the new configuration options.
+        *   [ ] Implement a subscription management system to handle subscription changes.
 
-### Task Group 6: Schedule Generation
-1. Implement automatic scheduling that:
-   - Fills available time slots efficiently
-   - Respects task priorities
-   - Maintains appropriate spacing
-   - Handles context switches
-   - Accounts for break times
+### Low Priority
 
-## Phase 4: Focus Session Management
+5.  **Extract Session Management Logic:**
+    *   **Description:** Extract the session management logic into a separate module or function to improve code reusability and maintainability.
+    *   **Task Breakdown:**
+        *   [ ] Create a new module or function for session management.
+        *   [ ] Move the session management logic from the authentication actions to the new module or function.
+        *   [ ] Update the authentication actions to use the new session management module or function.
 
-### Task Group 7: Timer System
-1. Create focus session timer that:
-   - Tracks work periods
-   - Manages break transitions
-   - Handles session completion
-   - Allows manual adjustments
-   - Provides visual feedback
-
-### Task Group 8: Progress Tracking
-1. Implement system to track:
-   - Completed focus sessions
-   - Break adherence
-   - Task completion status
-   - Daily productivity metrics
-
-## Phase 5: Calendar Integration
-
-### Task Group 9: Calendar View
-1. Create visual calendar that shows:
-   - Scheduled tasks
-   - Focus sessions
-   - Break periods
-   - Context indicators
-   - Time remaining
-   - Progress status
-
-### Task Group 10: Schedule Management
-1. Add ability to:
-   - View daily/weekly schedules
-   - Make manual adjustments
-   - Handle scheduling conflicts
-   - Reschedule tasks when needed
-   - Account for unexpected changes
-
-## Phase 6: Refinement and Polish
-
-### Task Group 11: User Experience
-1. Add features for:
-   - Easy schedule adjustments
-   - Quick task rescheduling
-   - Visual progress indicators
-   - Context switching notifications
-   - Break time reminders
-
-### Task Group 12: System Optimization
-1. Implement:
-   - Schedule recalculation triggers
-   - Efficient updates handling
-   - Performance optimizations
-   - Error recovery
-   - Edge case handling
-
-## Testing and Validation
-
-### Task Group 13: Testing Requirements
-1. Test:
-   - Schedule generation accuracy
-   - Focus session timing
-   - Break insertion logic
-   - Priority handling
-   - Context switching
-   - Manual overrides
-   - Error scenarios
-
-### Task Group 14: User Validation
-1. Verify:
-   - Interface usability
-   - Schedule effectiveness
-   - Focus session usefulness
-   - Break timing appropriateness
-   - Overall system reliability
-
-## Future Considerations
-
-### Task Group 15: Enhancement Planning
-1. Consider adding:
-   - Learning from user patterns
-   - Automatic time estimation
-   - Energy level tracking
-   - Productivity analytics
-   - Team schedule coordination
-   - Custom focus patterns
-   - Alternative break strategies
+6.  **Allow Filtering by Task Status:**
+    *   **Description:** Allow filtering tasks by status in the `getUncompletedTasks` function.
+    *   **Task Breakdown:**
+        *   [ ] Add a status parameter to the `getUncompletedTasks` function.
+        *   [ ] Update the database query to filter tasks by the specified status.
+        *   [ ] Update the client-side code to allow users to filter tasks by status.
