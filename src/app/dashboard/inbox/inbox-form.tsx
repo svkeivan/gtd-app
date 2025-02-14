@@ -22,14 +22,30 @@ export function InboxForm({ projectId }: { projectId?: string }) {
   const router = useRouter();
   const addItem = useAppStore((state) => state.addItem);
 
-  const handleEstimatedChange = (value: number) => {
-    // Clamp value between 5 and 480 minutes
-    setEstimated(Math.min(Math.max(value, 5), 480));
+  const handleEstimatedChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Allow empty input for better user experience while typing
+    if (value === '') {
+      setEstimated(0);
+      return;
+    }
+    const numValue = Number(value);
+    // Only update if it's a valid number
+    if (!isNaN(numValue)) {
+      setEstimated(numValue);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
+
+    // Validate estimated time before submission
+    const clampedEstimate = Math.min(Math.max(estimated, 5), 480);
+    if (estimated !== clampedEstimate) {
+      setEstimated(clampedEstimate);
+      return;
+    }
 
     const newItem = await createItem({ 
       title, 
@@ -109,7 +125,7 @@ export function InboxForm({ projectId }: { projectId?: string }) {
                 min={5}
                 max={480}
                 value={estimated}
-                onChange={(e) => handleEstimatedChange(Number(e.target.value))}
+                onChange={handleEstimatedChange}
                 className="h-10"
               />
               <p className="text-xs text-muted-foreground">Between 5 and 480 minutes (8 hours)</p>
