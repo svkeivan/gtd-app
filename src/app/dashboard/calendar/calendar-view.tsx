@@ -1,7 +1,9 @@
 "use client";
 
-import { getNextItems, updateItemPlanning } from "@/actions/items";
+import { getNextItems, updateItemPlanningAction, type UpdateItemPlanningResponse } from "@/actions/items";
 import { scheduleUnplannedTasks } from "@/actions/schedule";
+import { optimizeScheduleAction } from "@/actions/ai-schedule-optimizer";
+import type { AIScheduleSuggestion } from "@/types/schedule-types";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
 import {
@@ -109,6 +111,7 @@ export function CalendarView({ initialEvents }: CalendarViewProps) {
   const [selectedSlot, setSelectedSlot] = useState<SlotInfo | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isScheduling, setIsScheduling] = useState(false);
+  const [isOptimizing, setIsOptimizing] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -116,7 +119,7 @@ export function CalendarView({ initialEvents }: CalendarViewProps) {
     if (selectedSlot) {
       getNextItems()
         .then(setTasks)
-        .catch((error) => console.error("Error fetching tasks:", error));
+        .catch((error: Error) => console.error("Error fetching tasks:", error));
     }
   }, [selectedSlot]);
 
@@ -169,10 +172,17 @@ export function CalendarView({ initialEvents }: CalendarViewProps) {
     const endTime = moment(start).add(duration, "minutes").toDate();
 
     try {
-      await updateItemPlanning(event.id, {
-        plannedDate: start,
-        estimated: duration,
+      const result = await updateItemPlanningAction({
+        itemId: event.id,
+        data: {
+          plannedDate: start,
+          estimated: duration,
+        },
       });
+
+      if (result.error || !result.data) {
+        throw new Error(result.error || "Failed to update task");
+      }
 
       const newEvent: TaskCalendarEvent = {
         id: event.id,
@@ -194,6 +204,11 @@ export function CalendarView({ initialEvents }: CalendarViewProps) {
       }
     } catch (error) {
       console.error("Error updating task:", error);
+      toast({
+        title: "Update Failed",
+        description: error instanceof Error ? error.message : "Failed to update task",
+        variant: "destructive",
+      });
     }
   };
 
@@ -211,10 +226,17 @@ export function CalendarView({ initialEvents }: CalendarViewProps) {
 
     try {
       const duration = moment(end).diff(moment(start), "minutes");
-      await updateItemPlanning(event.itemId, {
-        plannedDate: start,
-        estimated: duration,
+      const result = await updateItemPlanningAction({
+        itemId: event.itemId,
+        data: {
+          plannedDate: start,
+          estimated: duration,
+        },
       });
+
+      if (result.error || !result.data) {
+        throw new Error(result.error || "Failed to update task");
+      }
 
       const updatedEvent: TaskCalendarEvent = {
         ...event,
@@ -225,6 +247,11 @@ export function CalendarView({ initialEvents }: CalendarViewProps) {
       setEvents(events.map((e) => (e.id === event.id ? updatedEvent : e)));
     } catch (error) {
       console.error("Error updating task:", error);
+      toast({
+        title: "Update Failed",
+        description: error instanceof Error ? error.message : "Failed to update task",
+        variant: "destructive",
+      });
     }
   };
 
@@ -241,10 +268,17 @@ export function CalendarView({ initialEvents }: CalendarViewProps) {
     );
 
     try {
-      const updatedTask = await updateItemPlanning(task.id, {
-        plannedDate: selectedSlot.start,
-        estimated: duration,
+      const result = await updateItemPlanningAction({
+        itemId: task.id,
+        data: {
+          plannedDate: selectedSlot.start,
+          estimated: duration,
+        },
       });
+
+      if (result.error || !result.data) {
+        throw new Error(result.error || "Failed to update task");
+      }
 
       const newEvent: TaskCalendarEvent = {
         id: task.id,
@@ -263,8 +297,14 @@ export function CalendarView({ initialEvents }: CalendarViewProps) {
       setSelectedSlot(null);
     } catch (error) {
       console.error("Error updating task:", error);
+      toast({
+        title: "Update Failed",
+        description: error instanceof Error ? error.message : "Failed to update task",
+        variant: "destructive",
+      });
     }
   };
+
   const handleSmartSchedule = async () => {
     if (isScheduling) return;
 
@@ -301,7 +341,7 @@ export function CalendarView({ initialEvents }: CalendarViewProps) {
       console.error("Error in smart scheduling:", error);
       toast({
         title: "Scheduling Failed",
-        description: "There was an error scheduling your tasks",
+        description: error instanceof Error ? error.message : "Failed to schedule tasks",
         variant: "destructive",
       });
     } finally {
@@ -309,9 +349,111 @@ export function CalendarView({ initialEvents }: CalendarViewProps) {
     }
   };
 
+  const handleAIOptimize = async () => {
+    if (isOptimizing) return;
+
+    setIsOptimizing(true);
+    try {
+      const result = await optimizeScheduleAction({
+        date: new Date(),
+        considerFutureWeek: true,
+      });
+
+      if (result.error || !result.data) {
+        throw new Error(result.error || "Failed to optimize schedule");
+      }
+
+      const schedule = result.data.schedule;
+
+      // Convert AI suggestions to calendar events
+      const newTaskEvents = schedule.scheduledTasks.map(
+        (task): TaskCalendarEvent => ({
+          id: task.taskId,
+          title: tasks.find((t) => t.id === task.taskId)?.title || "AI Scheduled Task",
+          start: new Date(task.suggestedStartTime),
+          end: new Date(task.suggestedEndTime),
+          isTask: true,
+          itemId: task.taskId,
+          contexts: [],
+          progress: 0,
+          timeSpent: 0,
+          estimated: Math.ceil(
+            (new Date(task.suggestedEndTime).getTime() -
+             new Date(task.suggestedStartTime).getTime()) / 60000
+          ),
+        })
+      );
+
+      const newBreakEvents = schedule.breakSlots.map(
+        (breakSlot): BreakCalendarEvent => ({
+          id: `break-${Math.random().toString(36).substr(2, 9)}`,
+          title: `${breakSlot.type.charAt(0) + breakSlot.type.slice(1).toLowerCase()} Break`,
+          start: new Date(breakSlot.startTime),
+          end: new Date(breakSlot.endTime),
+          isBreak: true,
+          breakType: breakSlot.type,
+          completed: false,
+          skipped: false,
+        })
+      );
+
+      // Update calendar with new events
+      setEvents([...events, ...newTaskEvents, ...newBreakEvents]);
+
+      // Show optimization recommendations
+      if (schedule.recommendations.length > 0) {
+        toast({
+          title: "Schedule Optimized",
+          description: (
+            <div className="mt-2 space-y-2">
+              <p>Schedule has been optimized! Key recommendations:</p>
+              <ul className="list-inside list-disc">
+                {schedule.recommendations.map((rec: string, i: number) => (
+                  <li key={i}>{rec}</li>
+                ))}
+              </ul>
+            </div>
+          ),
+          duration: 8000,
+        });
+      } else {
+        toast({
+          title: "Schedule Optimized",
+          description: "Your schedule has been optimized with AI recommendations",
+        });
+      }
+    } catch (error) {
+      console.error("Error in AI optimization:", error);
+      toast({
+        title: "Optimization Failed",
+        description: error instanceof Error ? error.message : "Failed to optimize schedule",
+        variant: "destructive",
+      });
+    } finally {
+      setIsOptimizing(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex justify-end space-x-4">
+        <Button
+          onClick={handleAIOptimize}
+          className="bg-purple-500 text-white hover:bg-purple-600"
+          disabled={isOptimizing}
+        >
+          {isOptimizing ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Optimizing...
+            </>
+          ) : (
+            <>
+              <Sparkles className="mr-2 h-4 w-4" />
+              AI Optimize Schedule
+            </>
+          )}
+        </Button>
         <Button
           onClick={handleSmartSchedule}
           className="bg-green-500 text-white hover:bg-green-600"

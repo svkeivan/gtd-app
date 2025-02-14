@@ -1,17 +1,26 @@
 import { ContextList } from "./context-list";
 import { ContextForm } from "./context-form";
 import { auth } from "@/lib/auth";
-import { getContexts } from "@/actions/contexts";
+import { getContexts, type ContextWithItems } from "@/actions/contexts";
 import { Layers } from "lucide-react";
 import { ContextsPageHint } from "./page-hint";
+import { redirect } from "next/navigation";
 
 export default async function ContextsPage() {
   const session = await auth();
   if (!session?.user) {
-    return <div>Please sign in to view your contexts.</div>;
+    redirect("/login");
   }
 
-  const contexts = await getContexts();
+  const result = await getContexts();
+  
+  if (result.error) {
+    throw new Error(result.error);
+  }
+
+  if (!result.data) {
+    throw new Error("Failed to load contexts");
+  }
 
   return (
     <div className='container mx-auto p-4 space-y-6'>
@@ -36,7 +45,7 @@ export default async function ContextsPage() {
         </div>
         <div className="space-y-4">
           <h2 className="text-lg font-semibold">Your Contexts</h2>
-          <ContextList initialContexts={contexts} />
+          <ContextList initialContexts={result.data} />
         </div>
         <div className="hidden xl:block">
           <div className="sticky top-4">

@@ -1,9 +1,11 @@
 "use server";
 
 import { auth } from "@/lib/auth";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Context, ItemStatus, PriorityLevel } from "@prisma/client";
 import { revalidatePath } from "next/cache";
-import { createSafeAction } from "@/lib/safe-action";
+import { createSafeAction } from "@/lib/create-safe-action";
+import { ActionState } from "@/lib/create-safe-action";
+import { z } from "zod";
 import {
   AuthenticationError,
   NotFoundError,
@@ -12,6 +14,53 @@ import {
 } from "@/lib/errors";
 
 const prisma = new PrismaClient();
+
+// Types
+export interface ContextListItem {
+  id: string;
+  userId: string;
+  createdAt: Date;
+  updatedAt: Date;
+  priority: PriorityLevel;
+  title: string;
+  notes: string | null;
+  status: ItemStatus;
+  dueDate: Date | null;
+  plannedDate: Date | null;
+  estimated: number | null;
+  requiresFocus: boolean;
+  projectId: string | null;
+}
+
+export interface ContextWithItems extends Context {
+  items: ContextListItem[];
+}
+
+// Schemas
+const getContextsSchema = z.void();
+
+const createContextSchema = z.object({
+  name: z.string().min(1).max(50),
+  description: z.string().max(500).optional(),
+  mondayEnabled: z.boolean().optional(),
+  tuesdayEnabled: z.boolean().optional(),
+  wednesdayEnabled: z.boolean().optional(),
+  thursdayEnabled: z.boolean().optional(),
+  fridayEnabled: z.boolean().optional(),
+  saturdayEnabled: z.boolean().optional(),
+  sundayEnabled: z.boolean().optional(),
+  startTime: z.string().optional(),
+  endTime: z.string().optional(),
+});
+
+const updateContextSchema = z.object({
+  id: z.string(),
+  data: createContextSchema,
+});
+
+const deleteContextSchema = z.object({
+  id: z.string(),
+});
 
 // Helper functions
 function validateTimeFormat(time: string): boolean {
@@ -39,66 +88,78 @@ function validateTimeRange(startTime: string, endTime: string): void {
 }
 
 // Implementation functions
-async function getContextsImpl() {
-  const { user } = await auth();
-  if (!user) throw new AuthenticationError();
-
+async function getContextsImpl(): Promise<ActionState<void, ContextWithItems[]>> {
   try {
+    const { user } = await auth();
+    if (!user) {
+      return {
+        fieldErrors: undefined,
+        error: "Unauthorized",
+      };
+    }
+
     const contexts = await prisma.context.findMany({
       where: {
         userId: user.id,
       },
       include: {
-        items: true,
+        items: {
+          select: {
+            id: true,
+            userId: true,
+            createdAt: true,
+            updatedAt: true,
+            priority: true,
+            title: true,
+            notes: true,
+            status: true,
+            dueDate: true,
+            plannedDate: true,
+            estimated: true,
+            requiresFocus: true,
+            projectId: true,
+          },
+        },
       },
       orderBy: {
         name: "asc",
       },
     });
-    return contexts;
+
+    return {
+      fieldErrors: undefined,
+      error: undefined,
+      data: contexts,
+    };
   } catch (error) {
-    handlePrismaError(error);
+    console.error("Error in getContexts:", error);
+    return {
+      fieldErrors: undefined,
+      error: error instanceof Error ? error.message : "Failed to load contexts",
+    };
   }
 }
 
-async function createContextImpl(data: {
-  name: string;
-  description?: string;
-  mondayEnabled?: boolean;
-  tuesdayEnabled?: boolean;
-  wednesdayEnabled?: boolean;
-  thursdayEnabled?: boolean;
-  fridayEnabled?: boolean;
-  saturdayEnabled?: boolean;
-  sundayEnabled?: boolean;
-  startTime?: string;
-  endTime?: string;
-}) {
-  const { user } = await auth();
-  if (!user) throw new AuthenticationError();
-
-  // Validate name
-  if (!data.name?.trim()) {
-    throw new ValidationError("Context name is required");
-  }
-  if (data.name.length > 50) {
-    throw new ValidationError("Context name must be less than 50 characters");
-  }
-
-  // Validate description
-  if (data.description && data.description.length > 500) {
-    throw new ValidationError("Description must be less than 500 characters");
-  }
-
-  // Validate time range if provided
-  if (data.startTime || data.endTime) {
-    validateTimeRange(
-      data.startTime ?? "09:00",
-      data.endTime ?? "17:00"
-    );
-  }
-
+async function createContextImpl(
+  data: z.infer<typeof createContextSchema>
+): Promise<ActionState<z.infer<typeof createContextSchema>, Context>> {
   try {
+    const { user } = await auth();
+    if (!user) {
+      return {
+        fieldErrors: undefined,
+        error: "Unauthorized",
+      };
+    }
+
+    // Validate time range if provided
+    if (data.startTime || data.endTime) {
+      validateTimeRange(
+        data.startTime ?? "09:00",
+        data.endTime ?? "17:00"
+      );
+    }
+
     // Check if context with same name exists
     const existingContext = await prisma.context.findFirst({
       where: {
@@ -108,7 +169,10 @@ async function createContextImpl(data: {
     });
 
     if (existingContext) {
-      throw new ValidationError("A context with this name already exists");
+      return {
+        fieldErrors: undefined,
+        error: "A context with this name already exists",
+      };
     }
 
     const context = await prisma.context.create({
@@ -129,113 +193,116 @@ async function createContextImpl(data: {
     });
 
     revalidatePath("/contexts");
-    return context;
+    return {
+      fieldErrors: undefined,
+      error: undefined,
+      data: context,
+    };
   } catch (error) {
-    handlePrismaError(error);
+    console.error("Error in createContext:", error);
+    return {
+      fieldErrors: undefined,
+      error: error instanceof Error ? error.message : "Failed to create context",
+    };
   }
 }
 
 async function updateContextImpl(
-  contextId: string,
-  data: {
-    name: string;
-    description?: string;
-    mondayEnabled?: boolean;
-    tuesdayEnabled?: boolean;
-    wednesdayEnabled?: boolean;
-    thursdayEnabled?: boolean;
-    fridayEnabled?: boolean;
-    saturdayEnabled?: boolean;
-    sundayEnabled?: boolean;
-    startTime?: string;
-    endTime?: string;
-  },
-) {
-  const { user } = await auth();
-  if (!user) throw new AuthenticationError();
-
-  // Validate name
-  if (!data.name?.trim()) {
-    throw new ValidationError("Context name is required");
-  }
-  if (data.name.length > 50) {
-    throw new ValidationError("Context name must be less than 50 characters");
-  }
-
-  // Validate description
-  if (data.description && data.description.length > 500) {
-    throw new ValidationError("Description must be less than 500 characters");
-  }
-
-  // Validate time range if provided
-  if (data.startTime || data.endTime) {
-    validateTimeRange(
-      data.startTime ?? "09:00",
-      data.endTime ?? "17:00"
-    );
-  }
-
+  data: z.infer<typeof updateContextSchema>
+): Promise<ActionState<z.infer<typeof updateContextSchema>, Context>> {
   try {
+    const { user } = await auth();
+    if (!user) {
+      return {
+        fieldErrors: undefined,
+        error: "Unauthorized",
+      };
+    }
+
     // Verify context exists and user owns it
     const existingContext = await prisma.context.findUnique({
-      where: { id: contextId },
+      where: { id: data.id },
     });
 
     if (!existingContext) {
-      throw new NotFoundError("Context", contextId);
+      return {
+        fieldErrors: undefined,
+        error: `Context not found: ${data.id}`,
+      };
     }
 
     if (existingContext.userId !== user.id) {
-      throw new AuthenticationError("Not authorized to modify this context");
+      return {
+        fieldErrors: undefined,
+        error: "Not authorized to modify this context",
+      };
     }
 
     // Check if new name conflicts with another context
-    if (data.name !== existingContext.name) {
+    if (data.data.name !== existingContext.name) {
       const nameConflict = await prisma.context.findFirst({
         where: {
           userId: user.id,
-          name: data.name,
-          id: { not: contextId },
+          name: data.data.name,
+          id: { not: data.id },
         },
       });
 
       if (nameConflict) {
-        throw new ValidationError("A context with this name already exists");
+        return {
+          fieldErrors: undefined,
+          error: "A context with this name already exists",
+        };
       }
     }
 
     const context = await prisma.context.update({
-      where: { id: contextId },
+      where: { id: data.id },
       data: {
-        name: data.name,
-        description: data.description,
-        mondayEnabled: data.mondayEnabled,
-        tuesdayEnabled: data.tuesdayEnabled,
-        wednesdayEnabled: data.wednesdayEnabled,
-        thursdayEnabled: data.thursdayEnabled,
-        fridayEnabled: data.fridayEnabled,
-        saturdayEnabled: data.saturdayEnabled,
-        sundayEnabled: data.sundayEnabled,
-        startTime: data.startTime,
-        endTime: data.endTime,
+        name: data.data.name,
+        description: data.data.description,
+        mondayEnabled: data.data.mondayEnabled,
+        tuesdayEnabled: data.data.tuesdayEnabled,
+        wednesdayEnabled: data.data.wednesdayEnabled,
+        thursdayEnabled: data.data.thursdayEnabled,
+        fridayEnabled: data.data.fridayEnabled,
+        saturdayEnabled: data.data.saturdayEnabled,
+        sundayEnabled: data.data.sundayEnabled,
+        startTime: data.data.startTime,
+        endTime: data.data.endTime,
       },
     });
 
     revalidatePath("/contexts");
-    return context;
+    return {
+      fieldErrors: undefined,
+      error: undefined,
+      data: context,
+    };
   } catch (error) {
-    handlePrismaError(error);
+    console.error("Error in updateContext:", error);
+    return {
+      fieldErrors: undefined,
+      error: error instanceof Error ? error.message : "Failed to update context",
+    };
   }
 }
 
-async function deleteContextImpl(contextId: string) {
-  const { user } = await auth();
-  if (!user) throw new AuthenticationError();
-
+async function deleteContextImpl(
+  data: z.infer<typeof deleteContextSchema>
+): Promise<ActionState<z.infer<typeof deleteContextSchema>, void>> {
   try {
+    const { user } = await auth();
+    if (!user) {
+      return {
+        fieldErrors: undefined,
+        error: "Unauthorized",
+      };
+    }
+
     // Verify context exists and user owns it
     const existingContext = await prisma.context.findUnique({
-      where: { id: contextId },
+      where: { id: data.id },
       include: {
         _count: {
           select: { items: true },
@@ -244,32 +311,48 @@ async function deleteContextImpl(contextId: string) {
     });
 
     if (!existingContext) {
-      throw new NotFoundError("Context", contextId);
+      return {
+        fieldErrors: undefined,
+        error: `Context not found: ${data.id}`,
+      };
     }
 
     if (existingContext.userId !== user.id) {
-      throw new AuthenticationError("Not authorized to delete this context");
+      return {
+        fieldErrors: undefined,
+        error: "Not authorized to delete this context",
+      };
     }
 
     // Check if context has any items
     if (existingContext._count.items > 0) {
-      throw new ValidationError(
-        "Cannot delete context with existing items. Please remove all items from this context first."
-      );
+      return {
+        fieldErrors: undefined,
+        error: "Cannot delete context with existing items. Please remove all items from this context first.",
+      };
     }
 
     await prisma.context.delete({
-      where: { id: contextId },
+      where: { id: data.id },
     });
 
     revalidatePath("/contexts");
+    return {
+      fieldErrors: undefined,
+      error: undefined,
+      data: undefined,
+    };
   } catch (error) {
-    handlePrismaError(error);
+    console.error("Error in deleteContext:", error);
+    return {
+      fieldErrors: undefined,
+      error: error instanceof Error ? error.message : "Failed to delete context",
+    };
   }
 }
 
 // Export wrapped actions
-export const getContexts = createSafeAction(getContextsImpl);
-export const createContext = createSafeAction(createContextImpl);
-export const updateContext = createSafeAction(updateContextImpl);
-export const deleteContext = createSafeAction(deleteContextImpl);
+export const getContexts = createSafeAction(getContextsSchema, getContextsImpl);
+export const createContext = createSafeAction(createContextSchema, createContextImpl);
+export const updateContext = createSafeAction(updateContextSchema, updateContextImpl);
+export const deleteContext = createSafeAction(deleteContextSchema, deleteContextImpl);
