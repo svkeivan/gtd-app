@@ -6,13 +6,8 @@ This document provides comprehensive documentation for the GTD App's REST API en
 
 ## Authentication
 
-### Authentication Headers
-```http
-Authorization: Bearer {session_token}
-```
-
-### Session Management
-- Sessions are managed via HTTP-only cookies
+### Authentication
+Sessions are managed via HTTP-only cookies. No `Authorization` header is required.
 - Session duration: 7 days
 - Rate limiting: 100 requests per minute
 
@@ -72,101 +67,7 @@ Response 200 OK
 }
 ```
 
-### Tasks
-
-#### List Tasks
-```http
-GET /api/tasks
-Query Parameters:
-- status: TaskStatus
-- projectId: string
-- contextId: string
-- page: number
-- limit: number
-
-Response 200 OK
-{
-  "tasks": [
-    {
-      "id": "cuid123",
-      "title": "Complete documentation",
-      "description": "Write API documentation",
-      "status": "IN_PROGRESS",
-      "priority": "HIGH",
-      "dueDate": "2025-02-10T00:00:00.000Z",
-      "projectId": "project123",
-      "contextId": "context123",
-      "createdAt": "2025-02-03T08:45:20.000Z",
-      "updatedAt": "2025-02-03T08:45:20.000Z"
-    }
-  ],
-  "pagination": {
-    "total": 100,
-    "page": 1,
-    "limit": 10,
-    "pages": 10
-  }
-}
-```
-
-#### Create Task
-```http
-POST /api/tasks
-Content-Type: application/json
-
-{
-  "title": "Complete documentation",
-  "description": "Write API documentation",
-  "status": "IN_PROGRESS",
-  "priority": "HIGH",
-  "dueDate": "2025-02-10T00:00:00.000Z",
-  "projectId": "project123",
-  "contextId": "context123"
-}
-
-Response 201 Created
-{
-  "id": "cuid123",
-  "title": "Complete documentation",
-  "description": "Write API documentation",
-  "status": "IN_PROGRESS",
-  "priority": "HIGH",
-  "dueDate": "2025-02-10T00:00:00.000Z",
-  "projectId": "project123",
-  "contextId": "context123",
-  "createdAt": "2025-02-03T08:45:20.000Z",
-  "updatedAt": "2025-02-03T08:45:20.000Z"
-}
-```
-
-#### Update Task
-```http
-PUT /api/tasks/:id
-Content-Type: application/json
-
-{
-  "title": "Updated title",
-  "status": "COMPLETED"
-}
-
-Response 200 OK
-{
-  "id": "cuid123",
-  "title": "Updated title",
-  "status": "COMPLETED",
-  "updatedAt": "2025-02-03T08:45:20.000Z"
-}
-```
-
-#### Delete Task
-```http
-DELETE /api/tasks/:id
-
-Response 200 OK
-{
-  "message": "Task deleted successfully"
-}
-```
+<!-- Tasks endpoints removed because they are not implemented -->
 
 ### Projects
 

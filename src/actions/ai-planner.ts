@@ -2,7 +2,7 @@
 
 import { getContexts } from "@/actions/contexts";
 import { getProfile } from "@/actions/profile";
-import { ItemStatus } from "@prisma/client";
+import { Context, ItemStatus, PriorityLevel, Project } from "@prisma/client";
 import { getNextActions } from "./items";
 
 /**
@@ -19,18 +19,23 @@ export async function buildWeeklyPlanPrompt(): Promise<string> {
         id: string;
         title: string;
         status: ItemStatus;
+        project: Project | null;
+        priority: PriorityLevel | null;
+        contexts: Context[];
+        dueDate: Date | null;
         estimated: number | null;
       }) =>
-        `${task.title}: ID ${task.id}, Status ${task.status}${task.estimated ? `, Estimated ${task.estimated}` : ""}`,
+        `${task.title}: ID ${task.id}, Status ${task.status}${task.priority ? `, Priority ${task.priority}` : ""}${task.estimated ? `, Estimated ${task.estimated}` : ""}${task.project ? `, Project ${task.project.title}` : ""}${task.contexts.length > 0 ? `, Context ${task.contexts[0].name}` : ""}${task.dueDate ? `, Due ${task.dueDate.toISOString().split("T")[0]}` : ""}`,
     )
     .join("; ");
-  const profile = `Work starts at ${profileData.workStartTime} and ends at ${profileData.workEndTime}.`;
+  const profile = `Work starts at ${profileData.workStartTime} and ends at ${profileData.workEndTime}. Lunch starts at ${profileData.lunchStartTime} for ${profileData.lunchDuration} minutes. Short breaks are ${profileData.breakDuration} minutes every ${profileData.pomodoroDuration} minutes of work, with a longer ${profileData.longBreakDuration} minute break after ${profileData.shortBreakInterval} short breaks.`;
   const contextItems = contextData
     .map(
       (ctx) =>
-        `${ctx.name} (${ctx.mondayEnabled ? 'Mon ' : ''}${ctx.tuesdayEnabled ? 'Tue ' : ''}${ctx.wednesdayEnabled ? 'Wed ' : ''}${ctx.thursdayEnabled ? 'Thu ' : ''}${ctx.fridayEnabled ? 'Fri ' : ''}${ctx.saturdayEnabled ? 'Sat ' : ''}${ctx.sundayEnabled ? 'Sun ' : ''}) from ${ctx.startTime} to ${ctx.endTime}`,
+        `${ctx.name} (${ctx.mondayEnabled ? "Mon " : ""}${ctx.tuesdayEnabled ? "Tue " : ""}${ctx.wednesdayEnabled ? "Wed " : ""}${ctx.thursdayEnabled ? "Thu " : ""}${ctx.fridayEnabled ? "Fri " : ""}${ctx.saturdayEnabled ? "Sat " : ""}${ctx.sundayEnabled ? "Sun " : ""}) from ${ctx.startTime} to ${ctx.endTime}`,
     )
-    .join("; ");  return `You are an AI scheduling assistant. Based on the following data:
+    .join("; ");
+  return `You are an AI scheduling assistant. Based on the following data:
 Tasks: ${tasks}
 Profile: ${profile}
 Context: ${contextItems}
@@ -70,7 +75,7 @@ export async function generateWeeklyPlan(
               ],
             },
           ],
-          max_tokens: 1000,
+          max_tokens: 5000,
           temperature: 0.7,
         }),
       },

@@ -1,17 +1,17 @@
-# GTD App - Your Personal Productivity System
+# Planito - Your Personal Productivity System
 
-## What is GTD App?
+## What is Planito?
 
-GTD App is a modern task management application designed to help you get organized and achieve your goals using the principles of the Getting Things Done® (GTD) methodology. It's a digital system to capture, organize, and track your tasks, projects, and commitments effectively.
+Planito is a modern task management application designed to help you get organized and achieve your goals using the principles of the Getting Things Done® (GTD) methodology. It is a digital system to capture, organize, and track your tasks, projects, and commitments effectively.
 
 ## What are the Goals?
 
-The primary goals of GTD App are to:
+The primary goals of Planito are to:
 
-*   **Reduce Stress:** By providing a trusted system to capture and organize all your "stuff," GTD App helps clear your mind and reduce the anxiety of forgetting important tasks.
+*   **Reduce Stress:** By providing a trusted system to capture and organize all your "stuff," Planito helps clear your mind and reduce the anxiety of forgetting important tasks.
 *   **Increase Productivity:** By following the GTD workflow, you can focus on the right tasks at the right time, leading to increased efficiency and productivity.
-*   **Gain Clarity:** GTD App helps you define your projects, break them down into actionable steps, and prioritize them based on your goals and values.
-*   **Achieve Your Goals:** By providing a structured system for managing your commitments, GTD App empowers you to make progress on your most important goals.
+*   **Gain Clarity:** Planito helps you define your projects, break them down into actionable steps, and prioritize them based on your goals and values.
+*   **Achieve Your Goals:** By providing a structured system for managing your commitments, Planito empowers you to make progress on your most important goals.
 
 ## Key Features
 
@@ -25,7 +25,7 @@ The primary goals of GTD App are to:
 
 ## Who is it For?
 
-GTD App is for anyone who wants to:
+Planito is for anyone who wants to:
 
 *   Get organized and reduce stress
 *   Increase productivity and efficiency
@@ -34,7 +34,7 @@ GTD App is for anyone who wants to:
 
 ## How Can I Use It?
 
-GTD App can be used to manage:
+Planito can be used to manage:
 
 *   Work tasks
 *   Personal projects
@@ -42,4 +42,19 @@ GTD App can be used to manage:
 *   Errands
 *   Goals and aspirations
 
-Whether you're a student, professional, entrepreneur, or anyone in between, GTD App can help you take control of your life and achieve your full potential.
+Whether you're a student, professional, entrepreneur, or anyone in between, Planito can help you take control of your life and achieve your full potential.
+
+## Technology Stack
+
+Planito is built using the following technology stack:
+
+*   **Frontend**: Next.js, React, TypeScript
+*   **Styling**: Tailwind CSS, shadcn/ui
+*   **State Management**: Zustand
+*   **Database**: PostgreSQL with Prisma ORM
+*   **Authentication**: Iron Session
+*   **Forms**: React Hook Form, Zod
+*   **Charts**: Recharts
+*   **Calendar**: React Big Calendar
+*   **Date Handling**: date-fns, moment
+*   **Drag & Drop**: @hello-pangea/dnd
