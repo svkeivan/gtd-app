@@ -56,11 +56,13 @@ interface User {
   isLoggedIn: boolean;
 }
 
+import { persian } from "@/lib/persian";
+
 function getGreeting() {
   const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 17) return "Good afternoon";
-  return "Good evening";
+  if (hour < 12) return persian["Good morning"] || "Good morning";
+  if (hour < 17) return persian["Good afternoon"] || "Good afternoon";
+  return persian["Good evening"] || "Good evening";
 }
 
 function getProgressStats(data: DashboardData) {
@@ -95,7 +97,7 @@ export default async function DashboardPage() {
           {getGreeting()}, {user.name}
         </h1>
         <p className="text-sm text-muted-foreground sm:text-base">
-          Here&apos;s your productivity overview for today
+          {persian["Here's your productivity overview for today"] || "Here's your productivity overview for today"}
         </p>
       </div>
 
@@ -105,14 +107,14 @@ export default async function DashboardPage() {
 
           <Card>
             <CardHeader className="space-y-1.5 pb-4">
-              <CardTitle className="text-lg sm:text-xl">Today&apos;s Progress</CardTitle>
+              <CardTitle className="text-lg sm:text-xl">{persian["Today's Progress"] || "Today's Progress"}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3 sm:space-y-4">
                 <Progress value={progressPercent} className="h-2 sm:h-3" />
                 <div className="flex justify-between text-xs sm:text-sm">
                   <span>
-                    {completedTasks} of {totalTasks} tasks completed
+                    {completedTasks} of {totalTasks} {persian["tasks completed"] || "tasks completed"}
                   </span>
                   <span className="font-medium">{progressPercent}%</span>
                 </div>

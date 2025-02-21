@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useAppStore } from '@/lib/store'
 import { createItem } from '@/actions/items'
+import { persian } from '@/lib/persian'
 
 export function QuickAddForm() {
   const [title, setTitle] = useState('')
@@ -30,7 +31,7 @@ export function QuickAddForm() {
       router.refresh()
     } catch (error) {
       console.error('Error adding item:', error)
-      setError(error instanceof Error ? error.message : 'Failed to add item')
+      setError(error instanceof Error ? error.message : persian["Failed to add item"] || 'Failed to add item')
     } finally {
       setIsLoading(false)
     }
@@ -39,7 +40,7 @@ export function QuickAddForm() {
   return (
     <Card className="sm:hover:shadow-md transition-shadow duration-200">
       <CardHeader className="space-y-1.5 pb-4">
-        <CardTitle className="text-lg sm:text-xl">Quick Add</CardTitle>
+        <CardTitle className="text-lg sm:text-xl">{persian["Quick Add"] || "Quick Add"}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-3">
@@ -48,7 +49,7 @@ export function QuickAddForm() {
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Add a new task..."
+              placeholder={persian["Add a new task..."] || "Add a new task..."}
               className="flex-grow min-w-0"
               disabled={isLoading}
             />
@@ -57,7 +58,7 @@ export function QuickAddForm() {
               disabled={isLoading}
               className="sm:w-24"
             >
-              {isLoading ? 'Adding...' : 'Add'}
+              {isLoading ? persian["Adding..."] || 'Adding...' : persian["Add"] || 'Add'}
             </Button>
           </div>
           {error && (

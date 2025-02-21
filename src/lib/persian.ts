@@ -191,5 +191,20 @@ export const persian = {
   "footer.copyright": "© 2025 Planito. کلیه حقوق محفوظ است.",
   "footer.twitter": "توییتر",
   "footer.linkedin": "لینکدین",
-  "footer.github": "گیت هاب"
+  "footer.github": "گیت هاب",
+  "Good morning": "صبح بخیر",
+  "Good afternoon": "بعد از ظهر بخیر",
+  "Good evening": "عصر بخیر",
+  "Here's your productivity overview for today": "در اینجا نمای کلی بهره وری شما برای امروز آمده است",
+  "Today's Progress": "پیشرفت امروز",
+  "tasks completed": "وظایف تکمیل شده",
+  "Overview": "مرور کلی",
+  "Capture your thoughts": "افکار خود را ثبت کنید",
+  "Ready to do": "آماده برای انجام",
+  "Track your goals": "اهداف خود را پیگیری کنید",
+  "Organize by context": "سازماندهی بر اساس زمینه",
+  "Quick Add": "اضافه کردن سریع",
+  "Add a new task...": "اضافه کردن یک وظیفه جدید...",
+  "Adding...": "در حال اضافه کردن...",
+  "Failed to add item": "اضافه کردن مورد با شکست مواجه شد"
 };
