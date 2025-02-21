@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import Link from "next/link";
+import { persian } from "@/lib/persian";
 
 interface HeroSectionProps {
   isLoggedIn?: boolean;
@@ -13,40 +14,40 @@ export function HeroSection({ isLoggedIn }: HeroSectionProps) {
         <div className="flex flex-col items-center text-center lg:text-left lg:flex-row lg:justify-between lg:gap-12">
           <div className="max-w-2xl lg:w-1/2">
             <h1 className="text-4xl font-bold tracking-tight sm:text-6xl mb-6 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-              Planito: Your Journey to Organized Living
+              {persian["hero.header"]}
             </h1>
             <p className="text-xl text-muted-foreground mb-8">
-              Where planning meets simplicity - Transform your ideas into achievable goals
+              {persian["hero.description"]}
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
               <div className="text-center p-4 bg-background/50 rounded-lg">
                 <div className="text-2xl font-bold text-primary">50%</div>
-                <div className="text-sm text-muted-foreground">Less Time on Organization</div>
+                <div className="text-sm text-muted-foreground">{persian["hero.lessTime"]}</div>
               </div>
               <div className="text-center p-4 bg-background/50 rounded-lg">
                 <div className="text-2xl font-bold text-primary">30%</div>
-                <div className="text-sm text-muted-foreground">Higher Completion Rate</div>
+                <div className="text-sm text-muted-foreground">{persian["hero.higherCompletion"]}</div>
               </div>
               <div className="text-center p-4 bg-background/50 rounded-lg">
                 <div className="text-2xl font-bold text-primary">1000+</div>
-                <div className="text-sm text-muted-foreground">Productive Users</div>
+                <div className="text-sm text-muted-foreground">{persian["hero.productiveUsers"]}</div>
               </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
               {isLoggedIn ? (
                 <Link href="/dashboard">
-                  <Button size="lg" className="w-full sm:w-auto">Go to Dashboard</Button>
+                  <Button size="lg" className="w-full sm:w-auto">{persian["hero.goToDashboard"]}</Button>
                 </Link>
               ) : (
                 <>
                   <Link href="/register">
-                    <Button size="lg" className="w-full sm:w-auto">Start Free Trial</Button>
+                    <Button size="lg" className="w-full sm:w-auto">{persian["hero.startFreeTrial"]}</Button>
                   </Link>
                   <Button variant="outline" size="lg" className="w-full sm:w-auto">
-                    Watch Demo
+                    {persian["hero.watchDemo"]}
                   </Button>
                   <Link href="/login">
-                    <Button variant="ghost" size="lg" className="w-full sm:w-auto">Sign In</Button>
+                    <Button variant="ghost" size="lg" className="w-full sm:w-auto">{persian["hero.signIn"]}</Button>
                   </Link>
                 </>
               )}

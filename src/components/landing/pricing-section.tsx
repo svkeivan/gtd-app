@@ -1,3 +1,4 @@
+import { persian } from "@/lib/persian";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -15,65 +16,65 @@ interface PricingTier {
 
 const pricingTiers: PricingTier[] = [
   {
-    name: "Free Trial",
+    name: persian["pricing.freeTrial.name"],
     price: "$0",
-    description: "15 days of Professional features",
+    description: persian["pricing.freeTrial.description"],
     features: [
-      "Unlimited projects during trial",
-      "Advanced analytics dashboard",
-      "Priority email support",
-      "Team collaboration tools",
-      "Converts to Free plan after trial"
+      persian["pricing.freeTrial.feature1"],
+      persian["pricing.freeTrial.feature2"],
+      persian["pricing.freeTrial.feature3"],
+      persian["pricing.freeTrial.feature4"],
+      persian["pricing.freeTrial.feature5"]
     ],
-    buttonText: "Start 15-Day Trial",
+    buttonText: persian["pricing.freeTrial.buttonText"],
     buttonVariant: "default" as const
   },
   {
-    name: "Personal",
+    name: persian["pricing.personal.name"],
     price: "$9",
-    description: "per month",
+    description: persian["pricing.personal.description"],
     features: [
-      "Up to 10 projects",
-      "Basic analytics dashboard",
-      "Priority email support",
-      "Unlimited tasks and contexts",
-      "Project time tracking",
-      "Custom tags and filters"
+      persian["pricing.personal.feature1"],
+      persian["pricing.personal.feature2"],
+      persian["pricing.personal.feature3"],
+      persian["pricing.personal.feature4"],
+      persian["pricing.personal.feature5"],
+      persian["pricing.personal.feature6"]
     ],
-    buttonText: "Choose Personal",
+    buttonText: persian["pricing.personal.buttonText"],
     buttonVariant: "default" as const
   },
   {
-    name: "Professional",
+    name: persian["pricing.professional.name"],
     price: "$19",
-    description: "per month",
+    description: persian["pricing.professional.description"],
     features: [
-      "Unlimited projects",
-      "Advanced analytics & reporting",
-      "Priority support with SLA",
-      "Team collaboration features",
-      "Project dependencies",
-      "Advanced time tracking",
-      "Custom dashboards"
+      persian["pricing.professional.feature1"],
+      persian["pricing.professional.feature2"],
+      persian["pricing.professional.feature3"],
+      persian["pricing.professional.feature4"],
+      persian["pricing.professional.feature5"],
+      persian["pricing.professional.feature6"],
+      persian["pricing.professional.feature7"]
     ],
-    buttonText: "Choose Professional",
+    buttonText: persian["pricing.professional.buttonText"],
     buttonVariant: "default" as const,
     popular: true
   },
   {
-    name: "Enterprise",
+    name: persian["pricing.enterprise.name"],
     price: "Custom",
-    description: "For large teams",
+    description: persian["pricing.enterprise.description"],
     features: [
-      "Custom project limits",
-      "Dedicated support manager",
-      "Custom integrations",
-      "SLA guarantees",
-      "Advanced security features",
-      "User role management",
-      "Training & onboarding"
+      persian["pricing.enterprise.feature1"],
+      persian["pricing.enterprise.feature2"],
+      persian["pricing.enterprise.feature3"],
+      persian["pricing.enterprise.feature4"],
+      persian["pricing.enterprise.feature5"],
+      persian["pricing.enterprise.feature6"],
+      persian["pricing.enterprise.feature7"]
     ],
-    buttonText: "Contact Sales",
+    buttonText: persian["pricing.enterprise.buttonText"],
     buttonVariant: "outline" as const
   }
 ];
@@ -82,15 +83,15 @@ export function PricingSection() {
   return (
     <section className="py-24 bg-background">
       <div className="container mx-auto px-4">
-        <h2 className="text-3xl font-bold text-center mb-4">Simple, Transparent Pricing</h2>
+        <h2 className="text-3xl font-bold text-center mb-4">{persian["pricing.title"]}</h2>
         <p className="text-center text-muted-foreground mb-16">
-          Start with a 15-day free trial of our Professional plan. No credit card required.
+          {persian["pricing.description"]}
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {pricingTiers.map((tier, index) => (
             <Card key={index} className={`p-6 relative ${tier.popular ? "border-primary" : ""}`}>
               {tier.popular && (
-                <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">Most Popular</Badge>
+                <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">{persian["pricing.mostPopular"]}</Badge>
               )}
               <div className="mb-8">
                 <h3 className="text-xl font-semibold mb-2">{tier.name}</h3>
@@ -130,7 +131,7 @@ export function PricingSection() {
           ))}
         </div>
         <p className="text-center text-sm text-muted-foreground mt-8">
-          All plans include: SSL security, automatic backups, and regular updates.
+          {persian["pricing.allPlansInclude"]}
         </p>
       </div>
     </section>

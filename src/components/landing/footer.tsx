@@ -1,40 +1,41 @@
+import { persian } from "@/lib/persian";
 import Link from "next/link";
 
 const footerSections = [
   {
-    title: "Company",
+    title: persian["footer.company"],
     links: [
-      { text: "About", href: "#" },
-      { text: "Careers", href: "#" },
-      { text: "Blog", href: "#" },
-      { text: "Press", href: "#" }
+      { text: persian["footer.about"], href: "#" },
+      { text: persian["footer.careers"], href: "#" },
+      { text: persian["footer.blog"], href: "#" },
+      { text: persian["footer.press"], href: "#" }
     ]
   },
   {
-    title: "Product",
+    title: persian["footer.product"],
     links: [
-      { text: "Features", href: "#" },
-      { text: "Pricing", href: "#" },
-      { text: "Security", href: "#" },
-      { text: "Enterprise", href: "#" }
+      { text: persian["footer.features"], href: "#" },
+      { text: persian["footer.pricing"], href: "#" },
+      { text: persian["footer.security"], href: "#" },
+      { text: persian["footer.enterprise"], href: "#" }
     ]
   },
   {
-    title: "Resources",
+    title: persian["footer.resources"],
     links: [
-      { text: "Documentation", href: "#" },
-      { text: "Help Center", href: "#" },
-      { text: "Community", href: "#" },
-      { text: "Contact", href: "#" }
+      { text: persian["footer.documentation"], href: "#" },
+      { text: persian["footer.helpCenter"], href: "#" },
+      { text: persian["footer.community"], href: "#" },
+      { text: persian["footer.contact"], href: "#" }
     ]
   },
   {
-    title: "Legal",
+    title: persian["footer.legal"],
     links: [
-      { text: "Privacy", href: "#" },
-      { text: "Terms", href: "#" },
-      { text: "Cookie Policy", href: "#" },
-      { text: "Licenses", href: "#" }
+      { text: persian["footer.privacy"], href: "#" },
+      { text: persian["footer.terms"], href: "#" },
+      { text: persian["footer.cookiePolicy"], href: "#" },
+      { text: persian["footer.licenses"], href: "#" }
     ]
   }
 ];
@@ -64,17 +65,17 @@ export function Footer() {
         </div>
         <div className="flex flex-col md:flex-row justify-between items-center pt-8 border-t">
           <div className="text-muted-foreground mb-4 md:mb-0">
-            © 2025 Planito. All rights reserved.
+            {persian["footer.copyright"]}
           </div>
           <div className="flex gap-4">
             <Link href="#" className="text-muted-foreground hover:text-primary">
-              Twitter
+              {persian["footer.twitter"]}
             </Link>
             <Link href="#" className="text-muted-foreground hover:text-primary">
-              LinkedIn
+              {persian["footer.linkedin"]}
             </Link>
             <Link href="#" className="text-muted-foreground hover:text-primary">
-              GitHub
+              {persian["footer.github"]}
             </Link>
           </div>
         </div>

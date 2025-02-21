@@ -1,33 +1,34 @@
+import { persian } from "@/lib/persian";
 import { Card } from "@/components/ui/card";
 import Image from "next/image";
 
 const useCases = [
   {
-    title: "Personal Productivity",
+    title: persian["useCases.personalProductivity.title"],
     features: [
-      "Task management",
-      "Goal tracking",
-      "Personal projects"
+      persian["useCases.personalProductivity.taskManagement"],
+      persian["useCases.personalProductivity.goalTracking"],
+      persian["useCases.personalProductivity.personalProjects"]
     ],
     image: "/window.svg",
     imageAlt: "Personal Use"
   },
   {
-    title: "Professional Work",
+    title: persian["useCases.professionalWork.title"],
     features: [
-      "Project management",
-      "Team collaboration",
-      "Time tracking"
+      persian["useCases.professionalWork.projectManagement"],
+      persian["useCases.professionalWork.teamCollaboration"],
+      persian["useCases.professionalWork.timeTracking"]
     ],
     image: "/window.svg",
     imageAlt: "Professional Use"
   },
   {
-    title: "Academic",
+    title: persian["useCases.academic.title"],
     features: [
-      "Research projects",
-      "Study planning",
-      "Assignment tracking"
+      persian["useCases.academic.researchProjects"],
+      persian["useCases.academic.studyPlanning"],
+      persian["useCases.academic.assignmentTracking"]
     ],
     image: "/window.svg",
     imageAlt: "Academic Use"
@@ -38,7 +39,7 @@ export function UseCasesSection() {
   return (
     <section className="py-24 bg-background">
       <div className="container mx-auto px-4">
-        <h2 className="text-3xl font-bold text-center mb-16">Perfect For Every Need</h2>
+        <h2 className="text-3xl font-bold text-center mb-16">{persian["useCases.title"]}</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {useCases.map((useCase, index) => (
             <Card key={index} className="p-6">
