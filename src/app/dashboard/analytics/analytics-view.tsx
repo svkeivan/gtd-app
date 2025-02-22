@@ -1,5 +1,6 @@
 'use client'
 
+import { persian } from "@/lib/persian";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts'
 
@@ -53,7 +54,7 @@ export function AnalyticsView({ data }: AnalyticsViewProps) {
       {/* GTD Workflow Distribution */}
       <Card>
         <CardHeader>
-          <CardTitle>GTD Workflow Distribution</CardTitle>
+          <CardTitle>{persian["GTD Workflow Distribution"] || "GTD Workflow Distribution"}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="h-[400px]">
@@ -83,25 +84,25 @@ export function AnalyticsView({ data }: AnalyticsViewProps) {
       {/* Project Health Metrics */}
       <Card>
         <CardHeader>
-          <CardTitle>Project Health</CardTitle>
+          <CardTitle>{persian["Project Health"] || "Project Health"}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="p-4 bg-secondary rounded-lg">
               <div className="text-2xl font-bold">{data.projectHealth.totalProjects}</div>
-              <div className="text-sm text-muted-foreground">Total Projects</div>
+              <div className="text-sm text-muted-foreground">{persian["Total Projects"] || "Total Projects"}</div>
             </div>
             <div className="p-4 bg-secondary rounded-lg">
               <div className="text-2xl font-bold">{data.projectHealth.activeProjects}</div>
-              <div className="text-sm text-muted-foreground">Active Projects</div>
+              <div className="text-sm text-muted-foreground">{persian["Active Projects"] || "Active Projects"}</div>
             </div>
             <div className="p-4 bg-secondary rounded-lg">
               <div className="text-2xl font-bold">{data.projectHealth.projectsWithoutNextActions}</div>
-              <div className="text-sm text-muted-foreground">Projects Needing Next Actions</div>
+              <div className="text-sm text-muted-foreground">{persian["Projects Needing Next Actions"] || "Projects Needing Next Actions"}</div>
             </div>
             <div className="p-4 bg-secondary rounded-lg">
               <div className="text-2xl font-bold">{data.projectHealth.avgNextActionsPerProject.toFixed(1)}</div>
-              <div className="text-sm text-muted-foreground">Avg Next Actions per Project</div>
+              <div className="text-sm text-muted-foreground">{persian["Avg Next Actions per Project"] || "Avg Next Actions per Project"}</div>
             </div>
           </div>
         </CardContent>
@@ -110,21 +111,21 @@ export function AnalyticsView({ data }: AnalyticsViewProps) {
       {/* Weekly Review Stats */}
       <Card>
         <CardHeader>
-          <CardTitle>Weekly Review Health</CardTitle>
+          <CardTitle>{persian["Weekly Review Health"] || "Weekly Review Health"}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="p-4 bg-secondary rounded-lg">
-              <div className="text-2xl font-bold">{data.weeklyReviewStats.lastReviewDate || 'Never'}</div>
-              <div className="text-sm text-muted-foreground">Last Review Date</div>
+              <div className="text-2xl font-bold">{data.weeklyReviewStats.lastReviewDate || persian["Never"] || 'Never'}</div>
+              <div className="text-sm text-muted-foreground">{persian["Last Review Date"] || "Last Review Date"}</div>
             </div>
             <div className="p-4 bg-secondary rounded-lg">
               <div className="text-2xl font-bold">{data.weeklyReviewStats.reviewsLast30Days}</div>
-              <div className="text-sm text-muted-foreground">Reviews in Last 30 Days</div>
+              <div className="text-sm text-muted-foreground">{persian["Reviews in Last 30 Days"] || "Reviews in Last 30 Days"}</div>
             </div>
             <div className="p-4 bg-secondary rounded-lg">
               <div className="text-2xl font-bold">{data.weeklyReviewStats.avgDaysBetweenReviews.toFixed(1)}</div>
-              <div className="text-sm text-muted-foreground">Avg Days Between Reviews</div>
+              <div className="text-sm text-muted-foreground">{persian["Avg Days Between Reviews"] || "Avg Days Between Reviews"}</div>
             </div>
           </div>
         </CardContent>
@@ -133,7 +134,7 @@ export function AnalyticsView({ data }: AnalyticsViewProps) {
       {/* Context Distribution */}
       <Card>
         <CardHeader>
-          <CardTitle>Context Distribution</CardTitle>
+          <CardTitle>{persian["Context Distribution"] || "Context Distribution"}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="h-[400px]">
@@ -143,7 +144,7 @@ export function AnalyticsView({ data }: AnalyticsViewProps) {
                 <XAxis dataKey="context" />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="count" fill="#8884d8" name="Tasks" />
+                <Bar dataKey="count" fill="#8884d8" name={persian["Tasks"] || "Tasks"} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -153,7 +154,7 @@ export function AnalyticsView({ data }: AnalyticsViewProps) {
       {/* Time to Completion */}
       <Card>
         <CardHeader>
-          <CardTitle>Time to Completion by Priority</CardTitle>
+          <CardTitle>{persian["Time to Completion by Priority"] || "Time to Completion by Priority"}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="h-[400px]">
@@ -163,7 +164,7 @@ export function AnalyticsView({ data }: AnalyticsViewProps) {
                 <XAxis dataKey="priority" />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="avgDays" fill="#82ca9d" name="Average Days to Complete" />
+                <Bar dataKey="avgDays" fill="#82ca9d" name={persian["Average Days to Complete"] || "Average Days to Complete"} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -173,7 +174,7 @@ export function AnalyticsView({ data }: AnalyticsViewProps) {
       {/* Task Completion Trend */}
       <Card>
         <CardHeader>
-          <CardTitle>Task Completion Trend</CardTitle>
+          <CardTitle>{persian["Task Completion Trend"] || "Task Completion Trend"}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="h-[400px]">
@@ -184,7 +185,7 @@ export function AnalyticsView({ data }: AnalyticsViewProps) {
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Line type="monotone" dataKey="completed" stroke="#8884d8" name="Completed Tasks" />
+                <Line type="monotone" dataKey="completed" stroke="#8884d8" name={persian["Completed Tasks"] || "Completed Tasks"} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -194,7 +195,7 @@ export function AnalyticsView({ data }: AnalyticsViewProps) {
       {/* Project Progress Trend */}
       <Card>
         <CardHeader>
-          <CardTitle>Project Progress Trend</CardTitle>
+          <CardTitle>{persian["Project Progress Trend"] || "Project Progress Trend"}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="h-[400px]">
@@ -205,8 +206,8 @@ export function AnalyticsView({ data }: AnalyticsViewProps) {
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Line type="monotone" dataKey="inProgress" stroke="#82ca9d" name="In Progress Projects" />
-                <Line type="monotone" dataKey="completed" stroke="#8884d8" name="Completed Projects" />
+                <Line type="monotone" dataKey="inProgress" stroke="#82ca9d" name={persian["In Progress Projects"] || "In Progress Projects"} />
+                <Line type="monotone" dataKey="completed" stroke="#8884d8" name={persian["Completed Projects"] || "Completed Projects"} />
               </LineChart>
             </ResponsiveContainer>
           </div>

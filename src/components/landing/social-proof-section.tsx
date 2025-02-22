@@ -1,36 +1,36 @@
-import { persian } from "@/lib/persian";
 import { Badge } from "@/components/ui/badge";
+import { landing } from "@/lib/translations/landing";
 import { Card } from "@/components/ui/card";
 
 const testimonials = [
   {
     name: "Sarah Johnson",
-    role: persian["socialProof.productManager"],
-    quote: persian["socialProof.productManager.quote"]
+    role: landing["socialProof.productManager"],
+    quote: landing["socialProof.productManager.quote"]
   },
   {
     name: "Ali Reza",
-    role: persian["socialProof.researcher"],
-    quote: persian["socialProof.researcher.quote"]
+    role: landing["socialProof.researcher"],
+    quote: landing["socialProof.researcher.quote"]
   },
   {
     name: "Michael Chen",
-    role: persian["socialProof.entrepreneur"],
-    quote: persian["socialProof.entrepreneur.quote"]
+    role: landing["socialProof.entrepreneur"],
+    quote: landing["socialProof.entrepreneur.quote"]
   }
 ];
 
 const trustBadges = [
-  persian["socialProof.featuredInProductHunt"],
-  persian["socialProof.rating"],
-  persian["socialProof.isoCertified"]
+  landing["socialProof.featuredInProductHunt"],
+  landing["socialProof.rating"],
+  landing["socialProof.isoCertified"]
 ];
 
 export function SocialProofSection() {
   return (
     <section className="py-24 bg-primary/5">
       <div className="container mx-auto px-4">
-        <h2 className="text-3xl font-bold text-center mb-16">{persian["socialProof.title"]}</h2>
+        <h2 className="text-3xl font-bold text-center mb-16">{landing["socialProof.title"]}</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
           {testimonials.map((testimonial, index) => (
             <Card key={index} className="p-6">

@@ -1,33 +1,33 @@
-import { persian } from "@/lib/persian";
 import { Card } from "@/components/ui/card";
+import { landing } from "@/lib/translations/landing";
 import Image from "next/image";
 
 const features = [
   {
     icon: "/file.svg",
-    title: persian["features.taskManagement.title"],
-    description: persian["features.taskManagement.description"],
+    title: landing["features.taskManagement.title"],
+    description: landing["features.taskManagement.description"],
     image: "/window.svg",
     imageAlt: "Task Organization Demo"
   },
   {
     icon: "/window.svg",
-    title: persian["features.projectManagement.title"],
-    description: persian["features.projectManagement.description"],
+    title: landing["features.projectManagement.title"],
+    description: landing["features.projectManagement.description"],
     image: "/window.svg",
     imageAlt: "Project Hierarchy"
   },
   {
     icon: "/window.svg",
-    title: persian["features.productivity.title"],
-    description: persian["features.productivity.description"],
+    title: landing["features.productivity.title"],
+    description: landing["features.productivity.description"],
     image: "/window.svg",
     imageAlt: "Analytics Dashboard"
   },
   {
     icon: "/globe.svg",
-    title: persian["features.globalProductivity.title"],
-    description: persian["features.globalProductivity.description"],
+    title: landing["features.globalProductivity.title"],
+    description: landing["features.globalProductivity.description"],
     image: "/window.svg",
     imageAlt: "Language Support"
   }
@@ -37,7 +37,7 @@ export function FeaturesSection() {
   return (
     <section className="py-24 bg-background">
       <div className="container mx-auto px-4">
-        <h2 className="text-3xl font-bold text-center mb-16">{persian["features.title"]}</h2>
+        <h2 className="text-3xl font-bold text-center mb-16">{landing["features.title"]}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {features.map((feature, index) => (
             <Card key={index} className="p-6 hover:shadow-lg transition-shadow">

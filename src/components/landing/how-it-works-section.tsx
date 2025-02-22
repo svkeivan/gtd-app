@@ -1,25 +1,25 @@
-import { persian } from "@/lib/persian";
+import { landing } from "@/lib/translations/landing";
 
 const steps = [
   {
     number: 1,
-    title: persian["howItWorks.capture.title"],
-    description: persian["howItWorks.capture.description"]
+    title: landing["howItWorks.capture.title"],
+    description: landing["howItWorks.capture.description"]
   },
   {
     number: 2,
-    title: persian["howItWorks.organize.title"],
-    description: persian["howItWorks.organize.description"]
+    title: landing["howItWorks.organize.title"],
+    description: landing["howItWorks.organize.description"]
   },
   {
     number: 3,
-    title: persian["howItWorks.review.title"],
-    description: persian["howItWorks.review.description"]
+    title: landing["howItWorks.review.title"],
+    description: landing["howItWorks.review.description"]
   },
   {
     number: 4,
-    title: persian["howItWorks.takeAction.title"],
-    description: persian["howItWorks.takeAction.description"]
+    title: landing["howItWorks.takeAction.title"],
+    description: landing["howItWorks.takeAction.description"]
   }
 ];
 
@@ -27,7 +27,7 @@ export function HowItWorksSection() {
   return (
     <section className="py-24 bg-primary/5">
       <div className="container mx-auto px-4">
-        <h2 className="text-3xl font-bold text-center mb-16">{persian["howItWorks.title"]}</h2>
+        <h2 className="text-3xl font-bold text-center mb-16">{landing["howItWorks.title"]}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {steps.map((step) => (
             <div key={step.number} className="text-center">

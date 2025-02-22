@@ -114,7 +114,7 @@ export default async function DashboardPage() {
                 <Progress value={progressPercent} className="h-2 sm:h-3" />
                 <div className="flex justify-between text-xs sm:text-sm">
                   <span>
-                    {completedTasks} of {totalTasks} {persian["tasks completed"] || "tasks completed"}
+                    {completedTasks} {persian["of"]} {totalTasks} {persian["tasks completed"] || "tasks completed"}
                   </span>
                   <span className="font-medium">{progressPercent}%</span>
                 </div>

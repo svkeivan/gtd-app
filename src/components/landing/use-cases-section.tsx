@@ -1,34 +1,34 @@
-import { persian } from "@/lib/persian";
 import { Card } from "@/components/ui/card";
+import { landing } from "@/lib/translations/landing";
 import Image from "next/image";
 
 const useCases = [
   {
-    title: persian["useCases.personalProductivity.title"],
+    title: landing["useCases.personalProductivity.title"],
     features: [
-      persian["useCases.personalProductivity.taskManagement"],
-      persian["useCases.personalProductivity.goalTracking"],
-      persian["useCases.personalProductivity.personalProjects"]
+      landing["useCases.personalProductivity.taskManagement"],
+      landing["useCases.personalProductivity.goalTracking"],
+      landing["useCases.personalProductivity.personalProjects"]
     ],
     image: "/window.svg",
     imageAlt: "Personal Use"
   },
   {
-    title: persian["useCases.professionalWork.title"],
+    title: landing["useCases.professionalWork.title"],
     features: [
-      persian["useCases.professionalWork.projectManagement"],
-      persian["useCases.professionalWork.teamCollaboration"],
-      persian["useCases.professionalWork.timeTracking"]
+      landing["useCases.professionalWork.projectManagement"],
+      landing["useCases.professionalWork.teamCollaboration"],
+      landing["useCases.professionalWork.timeTracking"]
     ],
     image: "/window.svg",
     imageAlt: "Professional Use"
   },
   {
-    title: persian["useCases.academic.title"],
+    title: landing["useCases.academic.title"],
     features: [
-      persian["useCases.academic.researchProjects"],
-      persian["useCases.academic.studyPlanning"],
-      persian["useCases.academic.assignmentTracking"]
+      landing["useCases.academic.researchProjects"],
+      landing["useCases.academic.studyPlanning"],
+      landing["useCases.academic.assignmentTracking"]
     ],
     image: "/window.svg",
     imageAlt: "Academic Use"
@@ -39,7 +39,7 @@ export function UseCasesSection() {
   return (
     <section className="py-24 bg-background">
       <div className="container mx-auto px-4">
-        <h2 className="text-3xl font-bold text-center mb-16">{persian["useCases.title"]}</h2>
+        <h2 className="text-3xl font-bold text-center mb-16">{landing["useCases.title"]}</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {useCases.map((useCase, index) => (
             <Card key={index} className="p-6">

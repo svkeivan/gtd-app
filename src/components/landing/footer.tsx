@@ -1,41 +1,41 @@
-import { persian } from "@/lib/persian";
 import Link from "next/link";
+import { landing } from "@/lib/translations/landing";
 
 const footerSections = [
   {
-    title: persian["footer.company"],
+    title: landing["footer.company"],
     links: [
-      { text: persian["footer.about"], href: "#" },
-      { text: persian["footer.careers"], href: "#" },
-      { text: persian["footer.blog"], href: "#" },
-      { text: persian["footer.press"], href: "#" }
+      { text: landing["footer.about"], href: "#" },
+      { text: landing["footer.careers"], href: "#" },
+      { text: landing["footer.blog"], href: "#" },
+      { text: landing["footer.press"], href: "#" }
     ]
   },
   {
-    title: persian["footer.product"],
+    title: landing["footer.product"],
     links: [
-      { text: persian["footer.features"], href: "#" },
-      { text: persian["footer.pricing"], href: "#" },
-      { text: persian["footer.security"], href: "#" },
-      { text: persian["footer.enterprise"], href: "#" }
+      { text: landing["footer.features"], href: "#" },
+      { text: landing["footer.pricing"], href: "#" },
+      { text: landing["footer.security"], href: "#" },
+      { text: landing["footer.enterprise"], href: "#" }
     ]
   },
   {
-    title: persian["footer.resources"],
+    title: landing["footer.resources"],
     links: [
-      { text: persian["footer.documentation"], href: "#" },
-      { text: persian["footer.helpCenter"], href: "#" },
-      { text: persian["footer.community"], href: "#" },
-      { text: persian["footer.contact"], href: "#" }
+      { text: landing["footer.documentation"], href: "#" },
+      { text: landing["footer.helpCenter"], href: "#" },
+      { text: landing["footer.community"], href: "#" },
+      { text: landing["footer.contact"], href: "#" }
     ]
   },
   {
-    title: persian["footer.legal"],
+    title: landing["footer.legal"],
     links: [
-      { text: persian["footer.privacy"], href: "#" },
-      { text: persian["footer.terms"], href: "#" },
-      { text: persian["footer.cookiePolicy"], href: "#" },
-      { text: persian["footer.licenses"], href: "#" }
+      { text: landing["footer.privacy"], href: "#" },
+      { text: landing["footer.terms"], href: "#" },
+      { text: landing["footer.cookiePolicy"], href: "#" },
+      { text: landing["footer.licenses"], href: "#" }
     ]
   }
 ];
@@ -65,17 +65,17 @@ export function Footer() {
         </div>
         <div className="flex flex-col md:flex-row justify-between items-center pt-8 border-t">
           <div className="text-muted-foreground mb-4 md:mb-0">
-            {persian["footer.copyright"]}
+            {landing["footer.copyright"]}
           </div>
           <div className="flex gap-4">
             <Link href="#" className="text-muted-foreground hover:text-primary">
-              {persian["footer.twitter"]}
+              {landing["footer.twitter"]}
             </Link>
             <Link href="#" className="text-muted-foreground hover:text-primary">
-              {persian["footer.linkedin"]}
+              {landing["footer.linkedin"]}
             </Link>
             <Link href="#" className="text-muted-foreground hover:text-primary">
-              {persian["footer.github"]}
+              {landing["footer.github"]}
             </Link>
           </div>
         </div>

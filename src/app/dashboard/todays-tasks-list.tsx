@@ -1,5 +1,7 @@
 import { Badge } from "@/components/ui/badge";
+import { common } from "@/lib/translations/common";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { dashboard } from "@/lib/translations/dashboard";
 
 interface Task {
   id: string;
@@ -27,7 +29,7 @@ export function TodaysTasksList({ tasks }: TodaysTasksListProps) {
   return (
     <Card className="sm:hover:shadow-md transition-shadow duration-200">
       <CardHeader className="space-y-1.5 pb-4">
-        <CardTitle className="text-lg sm:text-xl">Today&apos;s Tasks</CardTitle>
+        <CardTitle className="text-lg sm:text-xl">{dashboard.Dashboard || "Today's Tasks"}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-3 sm:space-y-4">
@@ -65,7 +67,7 @@ export function TodaysTasksList({ tasks }: TodaysTasksListProps) {
                   variant="destructive"
                   className="shrink-0 text-xs sm:text-sm"
                 >
-                  P{task.priority}
+                  {common.priority || "Priority"}{task.priority}
                 </Badge>
               )}
             </div>

@@ -1,3 +1,4 @@
+import { persian } from "@/lib/persian";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
@@ -32,7 +33,7 @@ export function RecentItemsList({ items }: RecentItemsListProps) {
   return (
     <Card className="sm:hover:shadow-md transition-shadow duration-200">
       <CardHeader className="space-y-1.5 pb-4">
-        <CardTitle className="text-lg sm:text-xl">Recent Items</CardTitle>
+        <CardTitle className="text-lg sm:text-xl">{persian["recentItems"] || "Recent Items"}</CardTitle>
       </CardHeader>
       <CardContent>
         <ul className="space-y-3 sm:space-y-4">
@@ -50,7 +51,7 @@ export function RecentItemsList({ items }: RecentItemsListProps) {
                 </Link>
                 {item.project && (
                   <div className="text-xs sm:text-sm text-muted-foreground line-clamp-1">
-                    Project: {item.project.title}
+                    {persian["project"]}: {item.project.title}
                   </div>
                 )}
               </div>
