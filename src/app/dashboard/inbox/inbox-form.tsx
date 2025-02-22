@@ -1,4 +1,5 @@
 "use client";
+import { inboxTr } from "@/lib/translations/inbox";
 
 import { createItem } from "@/actions/items";
 import { Button } from "@/components/ui/button";
@@ -51,7 +52,7 @@ export function InboxForm({ projectId }: { projectId?: string }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <h2 className="mb-4 text-lg font-semibold">Add New Item</h2>
+        <h2 className="mb-4 text-lg font-semibold">{inboxTr['AddNewItem'] || 'Add New Item'}</h2>
         <div className="grid gap-6">
           <div className="space-y-2">
             <Input
@@ -59,7 +60,7 @@ export function InboxForm({ projectId }: { projectId?: string }) {
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="What's on your mind? (e.g., 'Call dentist', 'Buy groceries')"
+              placeholder={inboxTr['WhatsOnYourMind'] || "What's on your mind? (e.g., 'Call dentist', 'Buy groceries')"}
               required
               className="h-12 text-lg"
             />
@@ -69,40 +70,40 @@ export function InboxForm({ projectId }: { projectId?: string }) {
               id="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add any additional details, context, or thoughts... (optional)"
+              placeholder={inboxTr['AddAdditionalDetails'] || "Add any additional details, context, or thoughts... (optional)"}
               rows={3}
               className="resize-none"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="priority">Priority Level</Label>
+              <Label htmlFor="priority">{inboxTr['PriorityLevel'] || "Priority Level"}</Label>
               <Select value={priority} onValueChange={(value: PriorityLevel) => setPriority(value)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select priority" />
+                  <SelectValue placeholder={inboxTr['SelectPriority'] || "Select priority"} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="LOW">
                     <span className={cn("inline-block w-2 h-2 rounded-full mr-2 bg-slate-400")} />
-                    Low
+                    {inboxTr['Low'] || "Low"}
                   </SelectItem>
                   <SelectItem value="MEDIUM">
                     <span className={cn("inline-block w-2 h-2 rounded-full mr-2 bg-blue-500")} />
-                    Medium
+                    {inboxTr['Medium'] || "Medium"}
                   </SelectItem>
                   <SelectItem value="HIGH">
                     <span className={cn("inline-block w-2 h-2 rounded-full mr-2 bg-yellow-500")} />
-                    High
+                    {inboxTr['High'] || "High"}
                   </SelectItem>
                   <SelectItem value="URGENT">
                     <span className={cn("inline-block w-2 h-2 rounded-full mr-2 bg-red-500")} />
-                    Urgent
+                    {inboxTr['Urgent'] || "Urgent"}
                   </SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="estimated">Estimated Time (minutes)</Label>
+              <Label htmlFor="estimated">{inboxTr['EstimatedTimeMinutes'] || "Estimated Time (minutes)"}</Label>
               <Input
                 id="estimated"
                 type="number"
@@ -112,7 +113,7 @@ export function InboxForm({ projectId }: { projectId?: string }) {
                 onChange={(e) => handleEstimatedChange(Number(e.target.value))}
                 className="h-10"
               />
-              <p className="text-xs text-muted-foreground">Between 5 and 480 minutes (8 hours)</p>
+              <p className="text-xs text-muted-foreground">{inboxTr['Between5And480Minutes'] || "Between 5 and 480 minutes (8 hours)"}</p>
             </div>
           </div>
           <div className="flex items-center space-x-2">
@@ -122,16 +123,16 @@ export function InboxForm({ projectId }: { projectId?: string }) {
               onCheckedChange={setRequiresFocus}
             />
             <Label htmlFor="focus-mode" className="cursor-pointer">
-              Requires Focus Mode
-              <p className="text-xs text-muted-foreground">
-                Enable for tasks that need concentrated attention
-              </p>
-            </Label>
+                          {inboxTr['RequiresFocusMode'] || "Requires Focus Mode"}
+                          <p className="text-xs text-muted-foreground">
+                            {inboxTr['EnableForTasksThatNeedConcentratedAttention'] || "Enable for tasks that need concentrated attention"}
+                          </p>
+                        </Label>
           </div>
           <div className="flex justify-end">
             <Button type="submit" size="lg" className="px-8">
-              Capture
-            </Button>
+                          {inboxTr['Capture'] || "Capture"}
+                        </Button>
           </div>
         </div>
       </div>

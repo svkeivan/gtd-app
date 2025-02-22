@@ -1,4 +1,5 @@
 "use client";
+import { inboxTr } from "@/lib/translations/inbox";
 
 import { useAppStore } from "@/lib/store";
 import { getContexts } from "@/actions/contexts";
@@ -48,7 +49,7 @@ export function InboxList({ initialItems }: { initialItems: Item[] }) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h2 className="text-lg font-semibold">Inbox Items</h2>
+          <h2 className="text-lg font-semibold">{inboxTr['InboxItems'] || "Inbox Items"}</h2>
           <div className="rounded-full bg-secondary px-2.5 py-0.5 text-sm text-secondary-foreground">
             {items.length} items
           </div>
