@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckSquare, FolderGit2, Inbox, Tags } from "lucide-react";
 import Link from "next/link";
 import { persian } from "@/lib/persian";
+import { toPersianNumber } from "@/lib/utils";
 
 interface DashboardSummaryProps {
   data: {
@@ -16,7 +17,7 @@ export function DashboardSummary({ data }: DashboardSummaryProps) {
   const summaryItems = [
     {
       title: persian["Inbox"] || "Inbox",
-      count: data.inboxCount,
+      count: toPersianNumber(data.inboxCount),
       link: "/dashboard/inbox",
       icon: Inbox,
       color: "text-blue-500",
@@ -24,7 +25,7 @@ export function DashboardSummary({ data }: DashboardSummaryProps) {
     },
     {
       title: persian["Next Actions"] || "Next Actions",
-      count: data.nextActionsCount,
+      count: toPersianNumber(data.nextActionsCount),
       link: "/dashboard/next-actions",
       icon: CheckSquare,
       color: "text-green-500",
@@ -32,7 +33,7 @@ export function DashboardSummary({ data }: DashboardSummaryProps) {
     },
     {
       title: persian["Projects"] || "Projects",
-      count: data.projectsCount,
+      count: toPersianNumber(data.projectsCount),
       link: "/dashboard/projects",
       icon: FolderGit2,
       color: "text-purple-500",
@@ -40,7 +41,7 @@ export function DashboardSummary({ data }: DashboardSummaryProps) {
     },
     {
       title: persian["Contexts"] || "Contexts",
-      count: data.contextsCount,
+      count: toPersianNumber(data.contextsCount),
       link: "/dashboard/contexts",
       icon: Tags,
       color: "text-orange-500",
@@ -54,7 +55,7 @@ export function DashboardSummary({ data }: DashboardSummaryProps) {
         <CardTitle className="flex items-center justify-between text-lg sm:text-xl">
           <span>{persian["Overview"] || "Overview"}</span>
           <span className="text-xs sm:text-sm font-normal text-muted-foreground">
-            {new Date().toLocaleDateString()}
+            {toPersianNumber(new Date().toLocaleDateString())}
           </span>
         </CardTitle>
       </CardHeader>

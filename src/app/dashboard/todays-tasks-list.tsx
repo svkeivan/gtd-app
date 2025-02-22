@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { common } from "@/lib/translations/common";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { dashboard } from "@/lib/translations/dashboard";
+import { toPersianNumber } from "@/lib/utils";
 
 interface Task {
   id: string;
@@ -67,7 +68,7 @@ export function TodaysTasksList({ tasks }: TodaysTasksListProps) {
                   variant="destructive"
                   className="shrink-0 text-xs sm:text-sm"
                 >
-                  {common.priority || "Priority"}{task.priority}
+                  {common.priority || "Priority"}{toPersianNumber(task.priority)}
                 </Badge>
               )}
             </div>

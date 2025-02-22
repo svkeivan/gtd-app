@@ -7,6 +7,7 @@ import { DashboardSummary } from "./dashboard-summary";
 import { QuickAddForm } from "./quick-add-form";
 import { RecentItemsList } from "./recent-items-list";
 import { TodaysTasksList } from "./todays-tasks-list";
+import { toPersianNumber } from "@/lib/utils";
 
 interface DashboardData {
   inboxCount: number;
@@ -56,13 +57,13 @@ interface User {
   isLoggedIn: boolean;
 }
 
-import { persian } from "@/lib/persian";
+import { dashboard } from "@/lib/translations/dashboard";
 
 function getGreeting() {
   const hour = new Date().getHours();
-  if (hour < 12) return persian["Good morning"] || "Good morning";
-  if (hour < 17) return persian["Good afternoon"] || "Good afternoon";
-  return persian["Good evening"] || "Good evening";
+  if (hour < 12) return dashboard["Good morning"] || "Good morning";
+  if (hour < 17) return dashboard["Good afternoon"] || "Good afternoon";
+  return dashboard["Good evening"] || "Good evening";
 }
 
 function getProgressStats(data: DashboardData) {
@@ -97,7 +98,8 @@ export default async function DashboardPage() {
           {getGreeting()}, {user.name}
         </h1>
         <p className="text-sm text-muted-foreground sm:text-base">
-          {persian["Here's your productivity overview for today"] || "Here's your productivity overview for today"}
+          {dashboard["Here's your productivity overview for today"] ||
+            "Here's your productivity overview for today"}
         </p>
       </div>
 
@@ -107,16 +109,19 @@ export default async function DashboardPage() {
 
           <Card>
             <CardHeader className="space-y-1.5 pb-4">
-              <CardTitle className="text-lg sm:text-xl">{persian["Today's Progress"] || "Today's Progress"}</CardTitle>
+              <CardTitle className="text-lg sm:text-xl">
+                {dashboard["Today's Progress"] || "Today's Progress"}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3 sm:space-y-4">
                 <Progress value={progressPercent} className="h-2 sm:h-3" />
                 <div className="flex justify-between text-xs sm:text-sm">
                   <span>
-                    {completedTasks} {persian["of"]} {totalTasks} {persian["tasks completed"] || "tasks completed"}
+                    {toPersianNumber(completedTasks)} {dashboard["of"]} {toPersianNumber(totalTasks)}{" "}
+                    {dashboard["tasks completed"] || "tasks completed"}
                   </span>
-                  <span className="font-medium">{progressPercent}%</span>
+                  <span className="font-medium">{toPersianNumber(progressPercent)}%</span>
                 </div>
               </div>
             </CardContent>

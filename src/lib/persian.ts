@@ -1,3 +1,18 @@
 export const persian = {
-
+  Inbox: "صندوق ورودی",
+  "Next Actions": "اقدامات بعدی",
+  Projects: "پروژه ها",
+  Contexts: "زمینه ها",
+  "Capture your thoughts": "افکار خود را ثبت کنید",
+  "Ready to do": "آماده برای انجام",
+  "Track your goals": "اهداف خود را پیگیری کنید",
+  "Organize by context": "سازماندهی بر اساس زمینه",
+  Overview: "بررسی اجمالی",
+  recentItems: "موارد اخیر",
+  project: "پروژه",
+  "Quick Add": "اضافه کردن سریع",
+  "Add a new task...": "اضافه کردن یک وظیفه جدید...",
+  "Adding...": "در حال اضافه کردن...",
+  "Add": "افزودن",
+  "Failed to add item": "اضافه کردن مورد با خطا مواجه شد",
 };
