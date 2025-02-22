@@ -56,9 +56,9 @@ export function Sidebar() {
         setProfile(data);
       } catch (error) {
         setError(
-          error instanceof Error ? error.message : "Failed to fetch profile",
+          error instanceof Error ? error.message : "دریافت پروفایل با شکست مواجه شد",
         );
-        console.error("Failed to fetch profile:", error);
+        console.error("دریافت پروفایل با شکست مواجه شد:", error);
       } finally {
         setIsLoading(false);
       }
@@ -71,92 +71,84 @@ export function Sidebar() {
     }
   }, [profile, setProfile]);
 
-  // Close mobile sidebar when route changes
   useEffect(() => {
     setIsMobileOpen(false);
   }, [pathname]);
 
   const navItems = [
-    // Task Workflow
     {
       href: "/dashboard",
-      label: "Dashboard",
+      label: "داشبورد",
       icon: LayoutDashboard,
       category: "overview",
     },
     {
       href: "/dashboard/inbox",
-      label: "Inbox",
+      label: "صندوق ورودی",
       icon: Inbox,
       category: "workflow",
     },
     {
       href: "/dashboard/next-actions",
-      label: "Next Actions",
+      label: "اقدامات بعدی",
       icon: CheckSquare,
       category: "workflow",
     },
     {
       href: "/dashboard/review",
-      label: "Review",
+      label: "بازبینی",
       icon: RefreshCw,
       category: "workflow",
     },
-
-    // Basic Data
     {
       href: "/dashboard/projects",
-      label: "Projects",
+      label: "پروژه‌ها",
       icon: FolderKanban,
       category: "data",
     },
     {
       href: "/dashboard/contexts",
-      label: "Contexts",
+      label: "زمینه‌ها",
       icon: Boxes,
       category: "data",
     },
-    { href: "/dashboard/tags", label: "Tags", icon: Tags, category: "data" },
-
-    // Tools & Analysis
+    { href: "/dashboard/tags", label: "برچسب‌ها", icon: Tags, category: "data" },
     {
       href: "/dashboard/calendar",
-      label: "Calendar",
+      label: "تقویم",
       icon: Calendar,
       category: "tools",
     },
     {
       href: "/dashboard/time-tracking",
-      label: "Time Tracking",
+      label: "پیگیری زمان",
       icon: Clock,
       category: "tools",
     },
     {
       href: "/dashboard/analytics",
-      label: "Analytics",
+      label: "تحلیل‌ها",
       icon: BarChart2,
       category: "tools",
     },
   ];
 
   const categories = {
-    overview: "Overview",
-    workflow: "Task Workflow",
-    data: "Organization",
-    tools: "Tools & Analysis",
+    overview: "نمای کلی",
+    workflow: "گردش کار",
+    data: "سازماندهی",
+    tools: "ابزارها و تحلیل",
   };
 
   return (
     <>
-      {/* Mobile Menu Button */}
       <button
         onClick={() => setIsMobileOpen(!isMobileOpen)}
-        className="fixed left-4 top-4 z-50 rounded-md p-2 text-muted-foreground hover:bg-accent lg:hidden"
+        className="fixed right-4 top-4 z-50 rounded-md p-2 text-muted-foreground hover:bg-accent lg:hidden"
       >
         <Menu className="h-6 w-6" />
       </button>
 
-      {/* Mobile Overlay */}
       {isMobileOpen && (
         <div
           className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden"
@@ -165,7 +157,7 @@ export function Sidebar() {
       )}
 
       <aside
-        className={`fixed left-0 top-0 z-50 h-screen bg-background shadow-lg transition-all duration-300 ease-in-out ${isCollapsed ? "w-20" : "w-64"} ${isMobileOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}
+        className={`fixed right-0 top-0 z-50 h-screen bg-background shadow-lg transition-all duration-300 ease-in-out ${isCollapsed ? "w-20" : "w-64"} ${isMobileOpen ? "translate-x-0" : "translate-x-full"} lg:translate-x-0`}
       >
         <div className="flex h-full flex-col">
           <div className="flex h-24 flex-col justify-center border-b px-4">
@@ -180,7 +172,7 @@ export function Sidebar() {
                     color="#15803d"
                   />
                   <span className="text-xs font-semibold text-primary">
-                    Grow
+                    رشد
                   </span>
                 </div>
               ) : (
@@ -191,16 +183,16 @@ export function Sidebar() {
                       color="#15803d"
                     />
                     <span className="text-2xl font-bold text-primary">
-                      <span className="text-green-700">Plan</span>ito
+                      <span className="text-green-700">پلن</span>یتو
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Grow your productivity, naturally
+                    بهره‌وری خود را به طور طبیعی افزایش دهید
                   </p>
                 </div>
               )}
             </Link>
-            <div className="absolute right-4 top-4 flex items-center gap-2">
+            <div className="absolute left-4 top-4 flex items-center gap-2">
               <ThemeSwitcher />
               <Button
                 variant="ghost"
@@ -209,9 +201,9 @@ export function Sidebar() {
                 onClick={() => setIsCollapsed(!isCollapsed)}
               >
                 {isCollapsed ? (
-                  <ChevronRight className="h-4 w-4" />
-                ) : (
                   <ChevronLeft className="h-4 w-4" />
+                ) : (
+                  <ChevronRight className="h-4 w-4" />
                 )}
               </Button>
             </div>
@@ -231,7 +223,7 @@ export function Sidebar() {
                     <Link key={item.href} href={item.href} className="block">
                       <Button
                         variant={pathname === item.href ? "secondary" : "ghost"}
-                        className={`w-full justify-start text-left transition-all duration-200 hover:translate-x-1 ${
+                        className={`w-full justify-start text-left transition-all duration-200 hover:-translate-x-1 ${
                           pathname === item.href
                             ? "bg-primary font-bold text-primary-foreground shadow-md"
                             : "hover:bg-accent"
@@ -270,9 +262,9 @@ export function Sidebar() {
                 ) : (
                   <div className="flex flex-col items-start">
                     <span className="text-sm font-medium">
-                      Error Loading Profile
+                      خطا در بارگذاری پروفایل
                     </span>
-                    <span className="text-xs">Click to retry</span>
+                    <span className="text-xs">برای تلاش مجدد کلیک کنید</span>
                   </div>
                 )}
               </Button>
@@ -286,18 +278,18 @@ export function Sidebar() {
                     <Avatar className="h-8 w-8">
                       <AvatarImage src={profile?.avatar || undefined} />
                       <AvatarFallback>
-                        {profile?.name?.charAt(0) || "?"}
+                        {profile?.name?.charAt(0) || "؟"}
                       </AvatarFallback>
                     </Avatar>
                     {!isCollapsed && (
                       <div className="flex flex-col items-start">
                         <span className="text-sm font-medium">
-                          {profile?.name || "Setup Profile"}
+                          {profile?.name || "تنظیم پروفایل"}
                         </span>
                         <span className="text-xs text-muted-foreground">
                           {profile?.profileComplete
-                            ? "View Profile"
-                            : "Complete Setup"}
+                            ? "مشاهده پروفایل"
+                            : "تکمیل تنظیمات"}
                         </span>
                       </div>
                     )}
@@ -309,10 +301,10 @@ export function Sidebar() {
               <Button
                 type="submit"
                 variant="ghost"
-                className="w-full justify-start text-left transition-all duration-200 hover:translate-x-1 hover:bg-destructive/20 hover:text-destructive"
+                className="w-full justify-start text-left transition-all duration-200 hover:-translate-x-1 hover:bg-destructive/20 hover:text-destructive"
               >
                 <LogOut className={`h-4 w-4 ${!isCollapsed && "mr-3"}`} />
-                {!isCollapsed && "Logout"}
+                {!isCollapsed && "خروج"}
               </Button>
             </form>
           </div>
