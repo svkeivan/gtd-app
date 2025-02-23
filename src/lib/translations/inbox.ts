@@ -1,3 +1,5 @@
+import { ItemStatus } from "@prisma/client";
+
 export const inboxTr = {
   Inbox: "صندوق ورودی",
   Description: "سریع فکرها، کارها و ایده‌ها رو بگیر. بعدا اونها رو به کارهای منظم تبدیل کن.",
@@ -20,4 +22,15 @@ export const inboxTr = {
   SearchItems: "جستجو موارد...",
   FilterByStatus: "فیلتر بر اساس وضعیت:",
   AllItems: "همه موارد",
+  Status: {
+    INBOX: "صندوق ورودی",
+    NEXT_ACTION: "اقدام بعدی",
+    PROJECT: "پروژه",
+    WAITING_FOR: "در انتظار",
+    SOMEDAY_MAYBE: "شاید یک روز",
+    REFERENCE: "مرجع",
+    COMPLETED: "تکمیل شده",
+    DELEGATED: "محول شده",
+    TRASHED: "حذف شده"
+  } as Record<ItemStatus, string>
 };
