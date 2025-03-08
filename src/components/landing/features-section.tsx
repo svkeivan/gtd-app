@@ -1,65 +1,120 @@
 import { Card } from "@/components/ui/card";
 import { landing } from "@/lib/translations/landing";
 import Image from "next/image";
+import { motion } from "framer-motion";
 
 const features = [
   {
-    icon: "/file.svg",
+    icon: "/icons/task-management.svg",
     title: landing["features.taskManagement.title"],
     description: landing["features.taskManagement.description"],
-    image: "/window.svg",
-    imageAlt: "Task Organization Demo"
+    image: "/features/task-organization.png",
+    imageAlt: "Task Organization Demo",
+    color: "from-blue-500/20 to-blue-600/20"
   },
   {
-    icon: "/window.svg",
+    icon: "/icons/project.svg",
     title: landing["features.projectManagement.title"],
     description: landing["features.projectManagement.description"],
-    image: "/window.svg",
-    imageAlt: "Project Hierarchy"
+    image: "/features/project-hierarchy.png",
+    imageAlt: "Project Hierarchy",
+    color: "from-purple-500/20 to-purple-600/20"
   },
   {
-    icon: "/window.svg",
+    icon: "/icons/productivity.svg",
     title: landing["features.productivity.title"],
     description: landing["features.productivity.description"],
-    image: "/window.svg",
-    imageAlt: "Analytics Dashboard"
+    image: "/features/analytics-dashboard.png",
+    imageAlt: "Analytics Dashboard",
+    color: "from-green-500/20 to-green-600/20"
   },
   {
-    icon: "/globe.svg",
+    icon: "/icons/globe.svg",
     title: landing["features.globalProductivity.title"],
     description: landing["features.globalProductivity.description"],
-    image: "/window.svg",
-    imageAlt: "Language Support"
+    image: "/features/language-support.png",
+    imageAlt: "Language Support",
+    color: "from-orange-500/20 to-orange-600/20"
   }
 ];
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.2
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      duration: 0.5
+    }
+  }
+};
+
 export function FeaturesSection() {
   return (
-    <section className="py-24 bg-background">
-      <div className="container mx-auto px-4">
-        <h2 className="text-3xl font-bold text-center mb-16">{landing["features.title"]}</h2>
+    <section className="py-24 bg-background relative overflow-hidden">
+      {/* Background decoration */}
+      <div className="absolute inset-0 bg-grid-pattern opacity-5" />
+      
+      <motion.div 
+        className="container mx-auto px-4 relative"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-100px" }}
+        variants={containerVariants}
+      >
+        <motion.h2 
+          className="text-3xl font-bold text-center mb-16"
+          variants={itemVariants}
+        >
+          {landing["features.title"]}
+        </motion.h2>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {features.map((feature, index) => (
-            <Card key={index} className="p-6 hover:shadow-lg transition-shadow">
-              <div className="mb-4">
-                <Image src={feature.icon} alt={feature.title} width={40} height={40} />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-              <p className="text-muted-foreground mb-4">
-                {feature.description}
-              </p>
-              <div className="aspect-video relative bg-muted rounded-lg overflow-hidden">
-                <Image
-                  src={feature.image}
-                  alt={feature.imageAlt}
-                  fill
-                  className="object-cover"
-                />
-              </div>
-            </Card>
+            <motion.div key={index} variants={itemVariants}>
+              <Card className="p-6 h-full hover:shadow-lg transition-all duration-300 group relative overflow-hidden">
+                <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
+                <div className="relative z-10">
+                  <div className="mb-4 flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <Image 
+                        src={feature.icon} 
+                        alt={feature.title} 
+                        width={24} 
+                        height={24}
+                        className="group-hover:scale-110 transition-transform duration-300" 
+                      />
+                    </div>
+                    <h3 className="text-xl font-semibold">{feature.title}</h3>
+                  </div>
+                  <p className="text-muted-foreground mb-6">
+                    {feature.description}
+                  </p>
+                  <div className="aspect-video relative rounded-lg overflow-hidden bg-muted">
+                    <Image
+                      src={feature.image}
+                      alt={feature.imageAlt}
+                      fill
+                      className="object-cover transform group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                  </div>
+                </div>
+              </Card>
+            </motion.div>
           ))}
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 }

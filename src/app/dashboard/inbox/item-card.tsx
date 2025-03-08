@@ -3,12 +3,15 @@
 import { deleteItem } from "@/actions/items";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { inboxTr } from "@/lib/translations/inbox";
 import {
   convertMinutesToHoursAndMinutes,
   getPriorityColor,
@@ -30,10 +33,15 @@ import {
   CheckSquare,
   CircleDot,
   Clock,
+  Copy,
+  ExternalLink,
   Flag,
   Folder,
   ListTodo,
   MoreHorizontal,
+  Share2,
+  Star,
+  Trash2,
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -51,16 +59,21 @@ interface ItemCardProps {
   item: ItemWithProject;
   projects: Project[];
   contexts: Context[];
+  isSelected?: boolean;
+  onToggleSelect?: () => void;
 }
 
 export function ItemCard({
   item: initialItem,
   projects,
   contexts,
+  isSelected = false,
+  onToggleSelect,
 }: ItemCardProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [item, setItem] = useState<ItemWithProject>(initialItem);
+  const [isHovered, setIsHovered] = useState(false);
 
   const handleDelete = async () => {
     try {
@@ -72,6 +85,7 @@ export function ItemCard({
       setIsDeleting(false);
     }
   };
+  
   const {
     id,
     title,
@@ -99,13 +113,37 @@ export function ItemCard({
   };
 
   return (
-    <div className="group relative">
-      <Card className="relative h-full overflow-hidden transition-all duration-300 hover:shadow-lg">
+    <div 
+      className="group relative"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <Card 
+        className={`relative h-full overflow-hidden transition-all duration-300 hover:shadow-lg ${
+          isSelected ? "border-primary ring-1 ring-primary" : ""
+        }`}
+      >
         <div
           className="absolute inset-x-0 top-0 h-1"
           style={{ backgroundColor: getPriorityColor(Number(priority)) }}
         />
-        <CardContent className="p-6">
+        
+        {/* Selection checkbox */}
+        {onToggleSelect && (
+          <div 
+            className={`absolute left-3 top-3 z-10 transition-opacity ${
+              isHovered || isSelected ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            <Checkbox 
+              checked={isSelected} 
+              onCheckedChange={() => onToggleSelect()}
+              className="h-5 w-5 rounded-sm border-2"
+            />
+          </div>
+        )}
+        
+        <CardContent className={`p-6 ${onToggleSelect ? "pl-10" : ""}`}>
           <div className="mb-6 flex items-start justify-between">
             <div className="space-y-1.5">
               <h3 className="text-xl font-semibold leading-tight tracking-tight">
@@ -128,16 +166,31 @@ export function ItemCard({
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuItem onClick={() => setIsOpen(true)}>
-                  Edit
+                  <Star className="mr-2 h-4 w-4" />
+                  {inboxTr['Edit'] || "Edit"}
                 </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Copy className="mr-2 h-4 w-4" />
+                  {inboxTr['Duplicate'] || "Duplicate"}
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Share2 className="mr-2 h-4 w-4" />
+                  {inboxTr['Share'] || "Share"}
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  {inboxTr['OpenInNewTab'] || "Open in new tab"}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="text-red-600"
                   onClick={handleDelete}
                   disabled={isDeleting}
                 >
-                  Delete
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  {inboxTr['Delete'] || "Delete"}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -216,7 +269,7 @@ export function ItemCard({
                   variant="ghost"
                   className="w-full gap-2 opacity-50 transition-opacity group-hover:opacity-100"
                 >
-                  Process Item
+                  {inboxTr['ProcessItem'] || "Process Item"}
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
